@@ -1,0 +1,8 @@
+{
+  "name": "actual-budget-cli-bridge",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@actual-app/api": "^25.3.0"
+  }
+}
