@@ -41,7 +41,7 @@ func TestTransactionsList_ValidationBeforeBridge(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "invalid --from date") {
+	if !strings.Contains(err.Error(), "invalid --from value") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if called {
@@ -64,7 +64,7 @@ func TestTransactionsList_LimitValidationBeforeBridge(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error")
 	}
-	if !strings.Contains(err.Error(), "limit must be greater than 0") {
+	if !strings.Contains(err.Error(), "invalid --limit value 0") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if called {
