@@ -142,3 +142,41 @@ func TestRunReturnsBridgeStderrWithoutSecretEcho(t *testing.T) {
 		t.Fatalf("secret leaked in error message: %q", msg)
 	}
 }
+
+func TestBridgeUserMessageNetworkErrors(t *testing.T) {
+	msg := bridgeUserMessage("request failed: ECONNREFUSED 127.0.0.1:5006")
+	if !strings.Contains(msg, "network error") {
+		t.Fatalf("expected network guidance, got %q", msg)
+	}
+
+	msg = bridgeUserMessage("connect ETIMEDOUT")
+	if !strings.Contains(msg, timeoutEnvVar) {
+		t.Fatalf("expected timeout env guidance, got %q", msg)
+	}
+}
+
+func TestRunTimeoutMessage(t *testing.T) {
+	t.Setenv(timeoutEnvVar, "100ms")
+
+	d := t.TempDir()
+	fakeNode := filepath.Join(d, "node")
+	script := "#!/usr/bin/env sh\n" +
+		"cat >/dev/null\n" +
+		"sleep 1\n"
+	if err := os.WriteFile(fakeNode, []byte(script), 0o700); err != nil {
+		t.Fatalf("write fake node: %v", err)
+	}
+	t.Setenv("PATH", d+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var out map[string]any
+	err := Run(context.Background(), "accounts-list", Request{Config: map[string]any{}}, &out)
+	if err == nil {
+		t.Fatal("expected timeout error")
+	}
+	if !strings.Contains(err.Error(), "request timed out") {
+		t.Fatalf("unexpected timeout error: %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), timeoutEnvVar) {
+		t.Fatalf("expected timeout env var mention, got %q", err.Error())
+	}
+}

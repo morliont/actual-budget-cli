@@ -58,7 +58,7 @@ func newAuthLoginCmd() *cobra.Command {
 				return err
 			}
 
-			cfg := &config.Config{ServerURL: serverURL, Password: string(pw), BudgetID: budgetID, BudgetPassword: budgetPassword}
+			cfg := &config.Config{ServerURL: strings.TrimSpace(serverURL), Password: string(pw), BudgetID: strings.TrimSpace(budgetID), BudgetPassword: budgetPassword}
 			var check map[string]any
 			if err := bridge.Run(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &check); err != nil {
 				return fmt.Errorf("auth failed: %w", err)
@@ -71,7 +71,7 @@ func newAuthLoginCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&serverURL, "server", "", "Actual server URL")
+	cmd.Flags().StringVar(&serverURL, "server", "", "Actual server URL (http:// or https://)")
 	cmd.Flags().StringVar(&budgetID, "budget", "", "Budget sync ID")
 	cmd.Flags().StringVar(&budgetPassword, "budget-password", "", "Budget encryption password (optional)")
 	return cmd

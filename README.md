@@ -28,7 +28,7 @@ make build
 
 You will be prompted for your server password (not echoed).
 
-The CLI validates server URLs (`http/https`), transaction dates (`YYYY-MM-DD`), and `--limit` (>0) before calling the bridge.
+The CLI validates server URLs (`http/https` + host), transaction dates (`YYYY-MM-DD`), date ranges (`--from` must be on/before `--to`), and `--limit` (>0) before calling the bridge.
 
 ## Command Structure
 
@@ -96,6 +96,29 @@ Bridge execution timeout:
 # budget summary (current month)
 ./bin/actual-cli budgets summary
 ```
+
+## Validation Rules
+
+- `auth login --server` must include both scheme and host (for example `http://localhost:5006` or `https://actual.example.com`).
+- `transactions list --from/--to` must use `YYYY-MM-DD`.
+- `transactions list --from` must not be after `--to`.
+- `transactions list --limit` must be greater than `0`.
+
+Validation happens before bridge execution so you get fast, actionable feedback locally.
+
+## Troubleshooting
+
+- **`request timed out after ...`**
+  - Increase bridge timeout: `export ACTUAL_CLI_BRIDGE_TIMEOUT=60s`
+  - Retry and verify server responsiveness.
+- **`network error while contacting Actual server`**
+  - Confirm `--server` URL and port.
+  - Ensure the Actual server is reachable from your machine.
+  - Check VPN/firewall/proxy settings.
+- **`bridge runtime unavailable`**
+  - Install Node.js 20+ and ensure `node` is available in `PATH`.
+- **TLS / self-signed cert issues**
+  - Set `NODE_EXTRA_CA_CERTS` to your CA bundle when needed.
 
 ## Development
 

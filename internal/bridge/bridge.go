@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -54,13 +55,19 @@ func Run(parent context.Context, op string, req Request, out any) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return fmt.Errorf("bridge timeout after %s (%s)", timeout, timeoutEnvVar)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return fmt.Errorf("request timed out after %s; increase %s (example: export %s=60s)", timeout, timeoutEnvVar, timeoutEnvVar)
 		}
-		if stderr.Len() > 0 {
-			return fmt.Errorf("bridge error: %s", strings.TrimSpace(stderr.String()))
+
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return fmt.Errorf("%s", bridgeUserMessage(stderrMsg))
 		}
-		return fmt.Errorf("bridge failed: %w", err)
+
+		if errors.Is(err, exec.ErrNotFound) {
+			return fmt.Errorf("bridge runtime unavailable: Node.js is not installed or not in PATH")
+		}
+		return fmt.Errorf("failed to execute bridge process: %w", err)
 	}
 
 	if err := json.Unmarshal(stdout.Bytes(), out); err != nil {
@@ -77,15 +84,26 @@ func timeoutFromEnv() (time.Duration, error) {
 	v, err := time.ParseDuration(raw)
 	if err == nil {
 		if v <= 0 {
-			return 0, fmt.Errorf("%s must be > 0 (got %q)", timeoutEnvVar, raw)
+			return 0, fmt.Errorf("invalid %s=%q: value must be greater than 0", timeoutEnvVar, raw)
 		}
 		return v, nil
 	}
 	seconds, secErr := strconv.Atoi(raw)
 	if secErr != nil || seconds <= 0 {
-		return 0, fmt.Errorf("invalid %s=%q; use duration like '45s' or positive seconds", timeoutEnvVar, raw)
+		return 0, fmt.Errorf("invalid %s=%q; use Go duration (e.g. 45s, 2m) or positive integer seconds", timeoutEnvVar, raw)
 	}
 	return time.Duration(seconds) * time.Second, nil
+}
+
+func bridgeUserMessage(stderrMsg string) string {
+	lower := strings.ToLower(stderrMsg)
+	if strings.Contains(lower, "econnrefused") || strings.Contains(lower, "enotfound") || strings.Contains(lower, "fetch failed") || strings.Contains(lower, "network") {
+		return "network error while contacting Actual server; verify --server URL, server availability, and connectivity"
+	}
+	if strings.Contains(lower, "etimedout") || strings.Contains(lower, "timeout") {
+		return fmt.Sprintf("request timed out contacting Actual server; retry or increase %s", timeoutEnvVar)
+	}
+	return fmt.Sprintf("bridge error: %s", stderrMsg)
 }
 
 func materializeBridgeScript() (string, func(), error) {

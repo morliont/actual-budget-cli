@@ -48,8 +48,11 @@ func newTransactionsListCmd() *cobra.Command {
 			if err := validateDate(to, "to"); err != nil {
 				return err
 			}
-			if limit <= 0 {
-				return fmt.Errorf("limit must be greater than 0")
+			if err := validateDateRange(from, to); err != nil {
+				return err
+			}
+			if err := validateLimit(limit); err != nil {
+				return err
 			}
 			var res struct {
 				Transactions []map[string]any `json:"transactions"`
@@ -70,9 +73,9 @@ func newTransactionsListCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&accountID, "account", "", "Filter by account ID")
-	cmd.Flags().StringVar(&from, "from", "", "From date YYYY-MM-DD")
-	cmd.Flags().StringVar(&to, "to", "", "To date YYYY-MM-DD")
-	cmd.Flags().IntVar(&limit, "limit", 100, "Max rows")
+	cmd.Flags().StringVar(&from, "from", "", "Start date (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
+	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of rows (>0)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Output JSON")
 	return cmd
 }
