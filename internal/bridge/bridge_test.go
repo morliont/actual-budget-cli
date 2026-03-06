@@ -44,6 +44,28 @@ func TestTimeoutFromEnv(t *testing.T) {
 	}
 }
 
+func TestDecodeBridgeOutput_InvalidJSON(t *testing.T) {
+	var out struct{}
+	err := decodeBridgeOutput([]byte("{"), &out)
+	if err == nil {
+		t.Fatal("expected decode error")
+	}
+	if !strings.Contains(err.Error(), "invalid bridge response") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestDecodeBridgeOutput_TypedResponse(t *testing.T) {
+	var out AccountsListResponse
+	err := decodeBridgeOutput([]byte(`{"accounts":[{"id":"acc-1","name":"Checking","type":"bank","offbudget":false,"closed":false}]}`), &out)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Accounts) != 1 {
+		t.Fatalf("expected one account, got %d", len(out.Accounts))
+	}
+}
+
 func TestMaterializeBridgeScript(t *testing.T) {
 	path, cleanup, err := materializeBridgeScript()
 	if err != nil {

@@ -1,11 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/morliont/actual-budget-cli/internal/bridge"
-	"github.com/morliont/actual-budget-cli/internal/config"
-	"github.com/morliont/actual-budget-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -28,24 +27,26 @@ func newAccountsListCmd() *cobra.Command {
 		Example: `  actual-cli accounts list
   actual-cli accounts list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
-			var res struct {
-				Accounts []map[string]any `json:"accounts"`
-			}
-			if err := bridge.Run(cmd.Context(), "accounts-list", bridge.Request{Config: cfg}, &res); err != nil {
+			var res bridge.AccountsListResponse
+			if err := runBridge(cmd.Context(), "accounts-list", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
 			}
 			if asJSON {
-				return output.PrintJSON(res.Accounts)
+				return printJSON(res.Accounts)
 			}
-			rows := [][]string{}
-			for _, a := range res.Accounts {
-				rows = append(rows, []string{fmt.Sprint(a["id"]), fmt.Sprint(a["name"]), fmt.Sprint(a["type"]), fmt.Sprint(a["offbudget"]), fmt.Sprint(a["closed"])})
+			rows := make([][]string, 0, len(res.Accounts))
+			for _, raw := range res.Accounts {
+				var a bridge.AccountRow
+				if err := json.Unmarshal(raw, &a); err != nil {
+					return fmt.Errorf("invalid account payload: %w", err)
+				}
+				rows = append(rows, []string{a.ID, a.Name, a.Type, fmt.Sprint(a.OffBudget), fmt.Sprint(a.Closed)})
 			}
-			output.PrintTable([]string{"ID", "Name", "Type", "Off Budget", "Closed"}, rows)
+			printTable([]string{"ID", "Name", "Type", "Off Budget", "Closed"}, rows)
 			return nil
 		},
 	}

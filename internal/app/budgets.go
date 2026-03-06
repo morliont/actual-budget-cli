@@ -1,11 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/morliont/actual-budget-cli/internal/bridge"
-	"github.com/morliont/actual-budget-cli/internal/config"
-	"github.com/morliont/actual-budget-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -28,23 +27,22 @@ func newBudgetsSummaryCmd() *cobra.Command {
 		Example: `  actual-cli budgets summary
   actual-cli budgets summary --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
-			var res map[string]any
-			if err := bridge.Run(cmd.Context(), "budgets-summary", bridge.Request{Config: cfg}, &res); err != nil {
+			var res bridge.BudgetSummaryResponse
+			if err := runBridge(cmd.Context(), "budgets-summary", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
 			}
 			if asJSON {
-				return output.PrintJSON(res)
+				return printJSON(res)
 			}
-			month := fmt.Sprint(res["month"])
-			budget, _ := res["budget"].(map[string]any)
-			income := fmt.Sprint(budget["income"])
-			budgeted := fmt.Sprint(budget["budgeted"])
-			spent := fmt.Sprint(budget["spent"])
-			output.PrintTable([]string{"Month", "Income", "Budgeted", "Spent"}, [][]string{{month, income, budgeted, spent}})
+			var budget bridge.BudgetSummaryRow
+			if err := json.Unmarshal(res.Budget, &budget); err != nil {
+				return fmt.Errorf("invalid budget payload: %w", err)
+			}
+			printTable([]string{"Month", "Income", "Budgeted", "Spent"}, [][]string{{res.Month, fmt.Sprint(budget.Income), fmt.Sprint(budget.Budgeted), fmt.Sprint(budget.Spent)}})
 			return nil
 		},
 	}

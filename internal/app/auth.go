@@ -59,8 +59,8 @@ func newAuthLoginCmd() *cobra.Command {
 			}
 
 			cfg := &config.Config{ServerURL: strings.TrimSpace(serverURL), Password: string(pw), BudgetID: strings.TrimSpace(budgetID), BudgetPassword: budgetPassword}
-			var check map[string]any
-			if err := bridge.Run(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &check); err != nil {
+			var check bridge.AuthCheckResponse
+			if err := runBridge(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &check); err != nil {
 				return fmt.Errorf("auth failed: %w", err)
 			}
 			if err := config.Save(cfg); err != nil {

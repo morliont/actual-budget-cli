@@ -23,8 +23,8 @@ const (
 )
 
 type Request struct {
-	Config any            `json:"config"`
-	Args   map[string]any `json:"args,omitempty"`
+	Config any `json:"config"`
+	Args   any `json:"args,omitempty"`
 }
 
 func Run(parent context.Context, op string, req Request, out any) error {
@@ -70,7 +70,14 @@ func Run(parent context.Context, op string, req Request, out any) error {
 		return fmt.Errorf("failed to execute bridge process: %w", err)
 	}
 
-	if err := json.Unmarshal(stdout.Bytes(), out); err != nil {
+	if err := decodeBridgeOutput(stdout.Bytes(), out); err != nil {
+		return err
+	}
+	return nil
+}
+
+func decodeBridgeOutput(data []byte, out any) error {
+	if err := json.Unmarshal(data, out); err != nil {
 		return fmt.Errorf("invalid bridge response: %w", err)
 	}
 	return nil

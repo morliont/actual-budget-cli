@@ -1,11 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/morliont/actual-budget-cli/internal/bridge"
-	"github.com/morliont/actual-budget-cli/internal/config"
-	"github.com/morliont/actual-budget-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +31,7 @@ func newTransactionsListCmd() *cobra.Command {
   actual-cli transactions list --account <ACCOUNT_ID> --from 2026-01-01 --to 2026-01-31 --limit 50
   actual-cli transactions list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
+			cfg, err := loadConfig()
 			if err != nil {
 				return err
 			}
@@ -54,20 +53,22 @@ func newTransactionsListCmd() *cobra.Command {
 			if err := validateLimit(limit); err != nil {
 				return err
 			}
-			var res struct {
-				Transactions []map[string]any `json:"transactions"`
-			}
-			if err := bridge.Run(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: map[string]any{"accountId": accountID, "from": from, "to": to, "limit": limit}}, &res); err != nil {
+			var res bridge.TransactionsListResponse
+			if err := runBridge(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: bridge.TransactionsListArgs{AccountID: accountID, From: from, To: to, Limit: limit}}, &res); err != nil {
 				return err
 			}
 			if asJSON {
-				return output.PrintJSON(res.Transactions)
+				return printJSON(res.Transactions)
 			}
-			rows := [][]string{}
-			for _, t := range res.Transactions {
-				rows = append(rows, []string{fmt.Sprint(t["date"]), fmt.Sprint(t["account"]), fmt.Sprint(t["payee_name"]), fmt.Sprint(t["amount"]), fmt.Sprint(t["notes"])})
+			rows := make([][]string, 0, len(res.Transactions))
+			for _, raw := range res.Transactions {
+				var t bridge.TransactionRow
+				if err := json.Unmarshal(raw, &t); err != nil {
+					return fmt.Errorf("invalid transaction payload: %w", err)
+				}
+				rows = append(rows, []string{t.Date, t.Account, t.PayeeName, fmt.Sprint(t.Amount), t.Notes})
 			}
-			output.PrintTable([]string{"Date", "Account", "Payee", "Amount", "Notes"}, rows)
+			printTable([]string{"Date", "Account", "Payee", "Amount", "Notes"}, rows)
 			return nil
 		},
 	}

@@ -128,6 +128,11 @@ make test
 make build
 ```
 
+### Internal bridge contracts
+
+The app layer uses typed DTOs in `internal/bridge/types.go` for core bridge request/response shapes.
+For commands that support `--json`, payloads are kept as `json.RawMessage` slices to preserve machine-readable output compatibility while still using typed row decoders for table output.
+
 ## CI
 
 GitHub Actions workflow runs:

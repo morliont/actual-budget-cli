@@ -17,6 +17,12 @@ func TestRootCommandMetadata(t *testing.T) {
 	if cmd.Version == "" {
 		t.Fatalf("expected version metadata to be set")
 	}
+
+	for _, name := range []string{"accounts", "auth", "budgets", "transactions"} {
+		if _, _, err := cmd.Find([]string{name}); err != nil {
+			t.Fatalf("expected %q subcommand: %v", name, err)
+		}
+	}
 }
 
 func TestRootHelpIncludesMajorCommands(t *testing.T) {
