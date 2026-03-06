@@ -18,72 +18,39 @@ Open-source-ready Go CLI for Actual Budget.
 - Node.js 20+
 - Access to an Actual server
 
-## Setup
+## Installation
+
+### Option A: Install from source (Go)
 
 ```bash
+go install github.com/morliont/actual-budget-cli/cmd/actual-cli@latest
+```
+
+### Option B: Build locally
+
+```bash
+git clone https://github.com/morliont/actual-budget-cli.git
+cd actual-budget-cli
 make setup
 make build
+./bin/actual-cli --version
+```
+
+### Option C: Prebuilt binaries
+
+For tagged releases, download the archive/binary for your platform from GitHub Releases, then verify with `checksums.txt`.
+
+## Quick start
+
+```bash
 ./bin/actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
 ```
 
 You will be prompted for your server password (not echoed).
 
-The CLI validates server URLs (`http/https` + host), transaction dates (`YYYY-MM-DD`), date ranges (`--from` must be on/before `--to`), and `--limit` (>0) before calling the bridge.
-
-## Command Structure
-
-Top-level command tree:
-
-- `auth` — authentication flows (`login`)
-- `accounts` — account queries (`list`)
-- `transactions` — transaction queries (`list`)
-- `budgets` — budget summaries (`summary`)
-
-For command-specific help:
+## Usage examples
 
 ```bash
-./bin/actual-cli --help
-./bin/actual-cli <command> --help
-```
-
-## Version Information
-
-Builds include version metadata wired via Go ldflags.
-
-```bash
-./bin/actual-cli --version
-# Example output:
-# v0.1.0 (commit a1b2c3d, built 2026-03-06T06:00:00Z)
-```
-
-## Config & Security
-
-Config is stored at:
-
-- `~/.config/actual-cli/config.json` (permission `0600`)
-- budget cache at `~/.local/share/actual-cli`
-
-Security notes:
-
-- Never commit config files or secrets.
-- Use environment/secret managers in CI.
-- For self-signed certs, set `NODE_EXTRA_CA_CERTS` if needed.
-- Credentials are written with locked-down permissions (`~/.config/actual-cli` = `0700`, `config.json` = `0600`, data dir = `0700`).
-- Bridge request payloads are sent over stdin (not process args) to avoid leaking secrets via argv/process listings.
-- The bridge script is embedded in the Go binary and materialized as a temporary file with `0600` permissions for execution (no cwd-relative script lookup).
-- Bridge errors only surface sanitized stderr text and do not echo request payloads.
-
-Bridge execution timeout:
-
-- Default timeout is `30s`.
-- Configure via `ACTUAL_CLI_BRIDGE_TIMEOUT` (supports Go duration values like `45s`, `2m`, or plain positive integer seconds).
-
-## Usage Examples
-
-```bash
-# login (non-interactive flags for server/budget)
-./bin/actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
-
 # list accounts
 ./bin/actual-cli accounts list
 
@@ -97,14 +64,99 @@ Bridge execution timeout:
 ./bin/actual-cli budgets summary
 ```
 
-## Validation Rules
+## Command structure
 
-- `auth login --server` must include both scheme and host (for example `http://localhost:5006` or `https://actual.example.com`).
-- `transactions list --from/--to` must use `YYYY-MM-DD`.
-- `transactions list --from` must not be after `--to`.
-- `transactions list --limit` must be greater than `0`.
+- `auth` — authentication flows (`login`)
+- `accounts` — account queries (`list`)
+- `transactions` — transaction queries (`list`)
+- `budgets` — budget summaries (`summary`)
 
-Validation happens before bridge execution so you get fast, actionable feedback locally.
+For command-specific help:
+
+```bash
+./bin/actual-cli --help
+./bin/actual-cli <command> --help
+```
+
+## Version information
+
+Builds include version metadata wired via Go ldflags.
+
+```bash
+./bin/actual-cli --version
+# Example output:
+# v0.1.0 (commit a1b2c3d, built 2026-03-06T06:00:00Z)
+```
+
+## Validation rules
+
+The CLI validates input before bridge execution:
+
+- `auth login --server` must include both scheme and host
+- `transactions list --from/--to` must use `YYYY-MM-DD`
+- `transactions list --from` must not be after `--to`
+- `transactions list --limit` must be greater than `0`
+
+## Config & security
+
+Config is stored at:
+
+- `~/.config/actual-cli/config.json` (permission `0600`)
+- budget cache at `~/.local/share/actual-cli`
+
+Security notes:
+
+- Never commit config files or secrets
+- Use environment/secret managers in CI
+- For self-signed certs, set `NODE_EXTRA_CA_CERTS` if needed
+- Credentials and bridge artifacts are written with locked-down permissions
+- Bridge request payloads are sent over stdin (not process args)
+
+Bridge execution timeout:
+
+- Default timeout is `30s`
+- Configure via `ACTUAL_CLI_BRIDGE_TIMEOUT` (`45s`, `2m`, or integer seconds)
+
+## Release process
+
+Maintainers can create a tagged release with:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Tagging triggers GitHub Actions to:
+
+1. run lint/tests,
+2. build deterministic multi-platform artifacts,
+3. generate release notes from git history,
+4. publish artifacts + `checksums.txt` to GitHub Releases.
+
+For local dry runs:
+
+```bash
+make release-artifacts
+make release-notes
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development and PR workflow.
+
+Project policies:
+
+- [Security policy](./SECURITY.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+
+## Development
+
+```bash
+make lint
+make test
+make build
+make fmt-check
+```
 
 ## Troubleshooting
 
@@ -120,14 +172,6 @@ Validation happens before bridge execution so you get fast, actionable feedback 
 - **TLS / self-signed cert issues**
   - Set `NODE_EXTRA_CA_CERTS` to your CA bundle when needed.
 
-## Development
-
-```bash
-make lint
-make test
-make build
-```
-
 ### Internal bridge contracts
 
 The app layer uses typed DTOs in `internal/bridge/types.go` for core bridge request/response shapes.
@@ -138,6 +182,7 @@ For commands that support `--json`, payloads are kept as `json.RawMessage` slice
 GitHub Actions workflow runs:
 
 - `npm ci`
-- `go vet ./...`
-- `go test ./...`
-- `go build ./cmd/actual-cli`
+- `make lint`
+- `make test`
+- `make build`
+- `make fmt-check`
