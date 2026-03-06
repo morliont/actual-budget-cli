@@ -21,3 +21,16 @@ If Security Advisories are unavailable, open an issue titled `SECURITY: private 
 - Initial acknowledgment: within 72 hours
 - Triage/update: within 7 days
 - Fix timeline: depends on severity and complexity
+
+## Release integrity and provenance
+
+Tagged releases are produced via GitHub Actions with:
+
+- GoReleaser-generated archives + checksums
+- Sigstore cosign **keyless** signature for `checksums.txt`
+- GitHub build provenance attestation for `checksums.txt`
+
+Consumers should verify both signature and provenance before use. See:
+
+- [README release verification section](./README.md#verify-release-integrity--provenance)
+- [RELEASE.md](./RELEASE.md)

@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -27,12 +29,46 @@ jobs:
       - run: npm ci
       - run: make lint
       - run: make test
-      - run: make release-artifacts
-      - run: mkdir -p dist && ./scripts/release-notes.sh "${GITHUB_REF_NAME}" > dist/RELEASE_NOTES.md
+      - run: make build
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          body_path: dist/RELEASE_NOTES.md
-          files: |
-            dist/*
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: Keyless sign release checksums
+        run: |
+          cosign sign-blob --yes \
+            --output-signature dist/checksums.txt.sig \
+            --output-certificate dist/checksums.txt.pem \
+            dist/checksums.txt
+
+      - name: Verify keyless signature in CI
+        run: |
+          cosign verify-blob \
+            --certificate dist/checksums.txt.pem \
+            --signature dist/checksums.txt.sig \
+            --certificate-identity-regexp "^https://github.com/morliont/actual-budget-cli/.github/workflows/release.yml@refs/tags/v.*$" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            dist/checksums.txt
+
+      - name: Generate build provenance attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/checksums.txt
+
+      - name: Upload checksum signature assets to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" \
+            dist/checksums.txt.sig \
+            dist/checksums.txt.pem \
+            --clobber

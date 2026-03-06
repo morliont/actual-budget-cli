@@ -38,7 +38,53 @@ make build
 
 ### Option C: Prebuilt binaries
 
-For tagged releases, download the archive/binary for your platform from GitHub Releases, then verify with `checksums.txt`.
+For tagged releases, download the archive for your platform from GitHub Releases.
+
+Each release publishes:
+- platform archives (`actual-cli_<version>_<os>_<arch>.tar.gz` / `.zip`)
+- `checksums.txt`
+- keyless Sigstore signature + certificate for checksums (`checksums.txt.sig`, `checksums.txt.pem`)
+- GitHub build provenance attestation for `checksums.txt`
+
+## Verify release integrity & provenance
+
+Example for `v0.1.0` on Linux amd64:
+
+```bash
+TAG=v0.1.0
+ASSET=actual-cli_${TAG}_linux_amd64.tar.gz
+
+curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/${ASSET}
+curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt
+curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt.sig
+curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt.pem
+```
+
+1) Verify the checksum signature (keyless OIDC via GitHub Actions):
+
+```bash
+cosign verify-blob \
+  --certificate checksums.txt.pem \
+  --signature checksums.txt.sig \
+  --certificate-identity-regexp '^https://github.com/morliont/actual-budget-cli/.github/workflows/release.yml@refs/tags/v.*$' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  checksums.txt
+```
+
+2) Verify archive checksum:
+
+```bash
+sha256sum --ignore-missing -c checksums.txt
+```
+
+3) Verify GitHub provenance attestation for `checksums.txt`:
+
+```bash
+gh attestation verify checksums.txt \
+  --repo morliont/actual-budget-cli
+```
+
+For maintainers and automation details, see [RELEASE.md](./RELEASE.md).
 
 ## Quick start
 
@@ -128,15 +174,17 @@ git push origin v0.1.0
 
 Tagging triggers GitHub Actions to:
 
-1. run lint/tests,
-2. build deterministic multi-platform artifacts,
-3. generate release notes from git history,
-4. publish artifacts + `checksums.txt` to GitHub Releases.
+1. run lint/tests/build,
+2. run GoReleaser for deterministic multi-platform archives + `checksums.txt`,
+3. sign `checksums.txt` with Sigstore cosign keyless OIDC,
+4. generate and publish GitHub build provenance attestation for `checksums.txt`,
+5. publish release assets.
 
 For local dry runs:
 
 ```bash
-make release-artifacts
+make goreleaser-check
+make goreleaser-dry-run
 make release-notes
 ```
 

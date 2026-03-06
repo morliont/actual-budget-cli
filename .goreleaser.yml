@@ -1,0 +1,61 @@
+version: 2
+
+project_name: actual-cli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: actual-cli
+    main: ./cmd/actual-cli
+    binary: actual-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w -X github.com/morliont/actual-budget-cli/internal/version.Version={{ .Version }} -X github.com/morliont/actual-budget-cli/internal/version.Commit={{ .Commit }} -X github.com/morliont/actual-budget-cli/internal/version.Date={{ .Date }}
+    flags:
+      - -trimpath
+
+archives:
+  - id: default
+    ids:
+      - actual-cli
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: morliont
+    name: actual-budget-cli
+  draft: false
+  prerelease: auto
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
