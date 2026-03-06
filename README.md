@@ -68,7 +68,10 @@ Security notes:
 - Never commit config files or secrets.
 - Use environment/secret managers in CI.
 - For self-signed certs, set `NODE_EXTRA_CA_CERTS` if needed.
+- Credentials are written with locked-down permissions (`~/.config/actual-cli` = `0700`, `config.json` = `0600`, data dir = `0700`).
 - Bridge request payloads are sent over stdin (not process args) to avoid leaking secrets via argv/process listings.
+- The bridge script is embedded in the Go binary and materialized as a temporary file with `0600` permissions for execution (no cwd-relative script lookup).
+- Bridge errors only surface sanitized stderr text and do not echo request payloads.
 
 Bridge execution timeout:
 

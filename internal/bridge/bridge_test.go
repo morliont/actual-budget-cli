@@ -1,7 +1,11 @@
 package bridge
 
 import (
+	"context"
+	"encoding/json"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -53,5 +57,88 @@ func TestMaterializeBridgeScript(t *testing.T) {
 	}
 	if st.Size() == 0 {
 		t.Fatal("embedded script should not be empty")
+	}
+	if st.Mode().Perm() != 0o600 {
+		t.Fatalf("expected 0600 script perms, got %o", st.Mode().Perm())
+	}
+}
+
+func TestRunUsesStdinAndDoesNotLeakSecretsInArgv(t *testing.T) {
+	t.Setenv(timeoutEnvVar, "5s")
+
+	d := t.TempDir()
+	argsPath := filepath.Join(d, "args.txt")
+	stdinPath := filepath.Join(d, "stdin.txt")
+
+	fakeNode := filepath.Join(d, "node")
+	script := "#!/usr/bin/env sh\n" +
+		"printf '%s\\n' \"$@\" > \"" + argsPath + "\"\n" +
+		"cat > \"" + stdinPath + "\"\n" +
+		"printf '{\"ok\":true}'\n"
+	if err := os.WriteFile(fakeNode, []byte(script), 0o700); err != nil {
+		t.Fatalf("write fake node: %v", err)
+	}
+
+	t.Setenv("PATH", d+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	secret := "super-secret-password"
+	var out map[string]any
+	err := Run(context.Background(), "auth-check", Request{Config: map[string]any{"password": secret}}, &out)
+	if err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+
+	argsRaw, err := os.ReadFile(argsPath)
+	if err != nil {
+		t.Fatalf("read argv capture: %v", err)
+	}
+	args := strings.TrimSpace(string(argsRaw))
+	if strings.Contains(args, secret) {
+		t.Fatalf("secret leaked into argv: %q", args)
+	}
+	if !strings.Contains(args, "auth-check") {
+		t.Fatalf("expected operation in argv, got %q", args)
+	}
+
+	stdinRaw, err := os.ReadFile(stdinPath)
+	if err != nil {
+		t.Fatalf("read stdin capture: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdinRaw, &payload); err != nil {
+		t.Fatalf("stdin should carry JSON payload: %v", err)
+	}
+	cfg, _ := payload["config"].(map[string]any)
+	if cfg["password"] != secret {
+		t.Fatalf("expected secret in stdin payload")
+	}
+}
+
+func TestRunReturnsBridgeStderrWithoutSecretEcho(t *testing.T) {
+	t.Setenv(timeoutEnvVar, "5s")
+
+	d := t.TempDir()
+	fakeNode := filepath.Join(d, "node")
+	script := "#!/usr/bin/env sh\n" +
+		"cat >/dev/null\n" +
+		"echo 'bridge exploded' 1>&2\n" +
+		"exit 1\n"
+	if err := os.WriteFile(fakeNode, []byte(script), 0o700); err != nil {
+		t.Fatalf("write fake node: %v", err)
+	}
+	secret := "very-secret"
+	t.Setenv("PATH", d+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var out map[string]any
+	err := Run(context.Background(), "accounts-list", Request{Config: map[string]any{"password": secret}}, &out)
+	if err == nil {
+		t.Fatal("expected run error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "bridge error: bridge exploded") {
+		t.Fatalf("unexpected error: %q", msg)
+	}
+	if strings.Contains(msg, secret) {
+		t.Fatalf("secret leaked in error message: %q", msg)
 	}
 }

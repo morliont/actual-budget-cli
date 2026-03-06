@@ -52,7 +52,11 @@ func Save(c *Config) error {
 		home, _ := os.UserHomeDir()
 		c.DataDir = filepath.Join(home, ".local", "share", "actual-cli")
 	}
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+	configDir := filepath.Dir(p)
+	if err := os.MkdirAll(configDir, 0o700); err != nil {
+		return err
+	}
+	if err := os.Chmod(configDir, 0o700); err != nil {
 		return err
 	}
 	b, err := json.MarshalIndent(c, "", "  ")
@@ -62,5 +66,11 @@ func Save(c *Config) error {
 	if err := os.WriteFile(p, b, 0o600); err != nil {
 		return err
 	}
-	return os.MkdirAll(c.DataDir, 0o700)
+	if err := os.Chmod(p, 0o600); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(c.DataDir, 0o700); err != nil {
+		return err
+	}
+	return os.Chmod(c.DataDir, 0o700)
 }
