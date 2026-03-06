@@ -27,6 +27,8 @@ make build
 
 You will be prompted for your server password (not echoed).
 
+The CLI validates server URLs (`http/https`), transaction dates (`YYYY-MM-DD`), and `--limit` (>0) before calling the bridge.
+
 ## Config & Security
 
 Config is stored at:
@@ -39,6 +41,12 @@ Security notes:
 - Never commit config files or secrets.
 - Use environment/secret managers in CI.
 - For self-signed certs, set `NODE_EXTRA_CA_CERTS` if needed.
+- Bridge request payloads are sent over stdin (not process args) to avoid leaking secrets via argv/process listings.
+
+Bridge execution timeout:
+
+- Default timeout is `30s`.
+- Configure via `ACTUAL_CLI_BRIDGE_TIMEOUT` (supports Go duration values like `45s`, `2m`, or plain positive integer seconds).
 
 ## Usage Examples
 

@@ -37,6 +37,12 @@ func newAuthLoginCmd() *cobra.Command {
 				txt, _ := reader.ReadString('\n')
 				budgetID = strings.TrimSpace(txt)
 			}
+			if err := validateServerURL(serverURL); err != nil {
+				return err
+			}
+			if strings.TrimSpace(budgetID) == "" {
+				return fmt.Errorf("budget sync ID is required")
+			}
 
 			fmt.Print("Server password: ")
 			pw, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -47,7 +53,7 @@ func newAuthLoginCmd() *cobra.Command {
 
 			cfg := &config.Config{ServerURL: serverURL, Password: string(pw), BudgetID: budgetID, BudgetPassword: budgetPassword}
 			var check map[string]any
-			if err := bridge.Run("auth-check", bridge.Request{Config: cfg}, &check); err != nil {
+			if err := bridge.Run(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &check); err != nil {
 				return fmt.Errorf("auth failed: %w", err)
 			}
 			if err := config.Save(cfg); err != nil {

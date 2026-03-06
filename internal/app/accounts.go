@@ -28,7 +28,7 @@ func newAccountsListCmd() *cobra.Command {
 			var res struct {
 				Accounts []map[string]any `json:"accounts"`
 			}
-			if err := bridge.Run("accounts-list", bridge.Request{Config: cfg}, &res); err != nil {
+			if err := bridge.Run(cmd.Context(), "accounts-list", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
 			}
 			if asJSON {

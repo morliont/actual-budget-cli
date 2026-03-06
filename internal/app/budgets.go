@@ -26,7 +26,7 @@ func newBudgetsSummaryCmd() *cobra.Command {
 				return err
 			}
 			var res map[string]any
-			if err := bridge.Run("budgets-summary", bridge.Request{Config: cfg}, &res); err != nil {
+			if err := bridge.Run(cmd.Context(), "budgets-summary", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
 			}
 			if asJSON {

@@ -34,10 +34,19 @@ func newTransactionsListCmd() *cobra.Command {
 			if to == "" {
 				to = "2999-12-31"
 			}
+			if err := validateDate(from, "from"); err != nil {
+				return err
+			}
+			if err := validateDate(to, "to"); err != nil {
+				return err
+			}
+			if limit <= 0 {
+				return fmt.Errorf("limit must be greater than 0")
+			}
 			var res struct {
 				Transactions []map[string]any `json:"transactions"`
 			}
-			if err := bridge.Run("transactions-list", bridge.Request{Config: cfg, Args: map[string]any{"accountId": accountID, "from": from, "to": to, "limit": limit}}, &res); err != nil {
+			if err := bridge.Run(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: map[string]any{"accountId": accountID, "from": from, "to": to, "limit": limit}}, &res); err != nil {
 				return err
 			}
 			if asJSON {

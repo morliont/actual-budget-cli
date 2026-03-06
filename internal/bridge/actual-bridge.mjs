@@ -5,6 +5,14 @@ function fail(message) {
   process.exit(1);
 }
 
+async function readStdin() {
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8').trim();
+}
+
 async function withSession(cfg, fn) {
   await api.init({
     dataDir: cfg.dataDir,
@@ -21,8 +29,11 @@ async function withSession(cfg, fn) {
 }
 
 async function run() {
-  const [, , op, rawPayload] = process.argv;
-  if (!op || !rawPayload) fail('missing op or payload');
+  const [, , op] = process.argv;
+  if (!op) fail('missing op');
+
+  const rawPayload = await readStdin();
+  if (!rawPayload) fail('missing payload on stdin');
 
   const payload = JSON.parse(rawPayload);
   const cfg = payload.config;
