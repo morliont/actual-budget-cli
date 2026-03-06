@@ -13,7 +13,11 @@ import (
 )
 
 func newAuthCmd() *cobra.Command {
-	cmd := &cobra.Command{Use: "auth", Short: "Authentication commands"}
+	cmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Authenticate with an Actual server",
+		Long:  "Authenticate and store local credentials used by other commands.",
+	}
 	cmd.AddCommand(newAuthLoginCmd())
 	return cmd
 }
@@ -23,7 +27,10 @@ func newAuthLoginCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "login",
-		Short: "Login and store local config",
+		Short: "Log in and save local config",
+		Long:  "Prompt for credentials (when missing) and store them in local config.",
+		Example: `  actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
+  actual-cli auth login`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			reader := bufio.NewReader(os.Stdin)
 

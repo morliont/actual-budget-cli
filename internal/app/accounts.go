@@ -10,7 +10,11 @@ import (
 )
 
 func newAccountsCmd() *cobra.Command {
-	cmd := &cobra.Command{Use: "accounts", Short: "Account commands"}
+	cmd := &cobra.Command{
+		Use:   "accounts",
+		Short: "Work with accounts",
+		Long:  "List and inspect account information from your Actual budget.",
+	}
 	cmd.AddCommand(newAccountsListCmd())
 	return cmd
 }
@@ -20,6 +24,9 @@ func newAccountsListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List accounts",
+		Long:  "List all accounts in the configured Actual budget.",
+		Example: `  actual-cli accounts list
+  actual-cli accounts list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {

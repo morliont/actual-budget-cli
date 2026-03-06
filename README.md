@@ -10,6 +10,7 @@ Open-source-ready Go CLI for Actual Budget.
 - `actual-cli accounts list [--json]`
 - `actual-cli transactions list [--account <id>] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--limit N] [--json]`
 - `actual-cli budgets summary [--json]`
+- `actual-cli --version` (includes build metadata)
 
 ## Requirements
 
@@ -28,6 +29,32 @@ make build
 You will be prompted for your server password (not echoed).
 
 The CLI validates server URLs (`http/https`), transaction dates (`YYYY-MM-DD`), and `--limit` (>0) before calling the bridge.
+
+## Command Structure
+
+Top-level command tree:
+
+- `auth` — authentication flows (`login`)
+- `accounts` — account queries (`list`)
+- `transactions` — transaction queries (`list`)
+- `budgets` — budget summaries (`summary`)
+
+For command-specific help:
+
+```bash
+./bin/actual-cli --help
+./bin/actual-cli <command> --help
+```
+
+## Version Information
+
+Builds include version metadata wired via Go ldflags.
+
+```bash
+./bin/actual-cli --version
+# Example output:
+# v0.1.0 (commit a1b2c3d, built 2026-03-06T06:00:00Z)
+```
 
 ## Config & Security
 
@@ -51,6 +78,9 @@ Bridge execution timeout:
 ## Usage Examples
 
 ```bash
+# login (non-interactive flags for server/budget)
+./bin/actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
+
 # list accounts
 ./bin/actual-cli accounts list
 

@@ -10,7 +10,11 @@ import (
 )
 
 func newTransactionsCmd() *cobra.Command {
-	cmd := &cobra.Command{Use: "transactions", Short: "Transaction commands"}
+	cmd := &cobra.Command{
+		Use:   "transactions",
+		Short: "Work with transactions",
+		Long:  "Query transactions with optional account and date filters.",
+	}
 	cmd.AddCommand(newTransactionsListCmd())
 	return cmd
 }
@@ -23,6 +27,10 @@ func newTransactionsListCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List transactions",
+		Long:  "List transactions from the configured Actual budget.",
+		Example: `  actual-cli transactions list
+  actual-cli transactions list --account <ACCOUNT_ID> --from 2026-01-01 --to 2026-01-31 --limit 50
+  actual-cli transactions list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {

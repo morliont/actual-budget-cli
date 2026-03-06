@@ -10,7 +10,11 @@ import (
 )
 
 func newBudgetsCmd() *cobra.Command {
-	cmd := &cobra.Command{Use: "budgets", Short: "Budget commands"}
+	cmd := &cobra.Command{
+		Use:   "budgets",
+		Short: "Work with budget summaries",
+		Long:  "Inspect high-level budget information from the current month.",
+	}
 	cmd.AddCommand(newBudgetsSummaryCmd())
 	return cmd
 }
@@ -19,7 +23,10 @@ func newBudgetsSummaryCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "summary",
-		Short: "Summary for current budget month",
+		Short: "Show current budget month summary",
+		Long:  "Show current-month budget totals (income, budgeted, spent).",
+		Example: `  actual-cli budgets summary
+  actual-cli budgets summary --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {
