@@ -12,28 +12,18 @@ import (
 	"golang.org/x/term"
 )
 
-func newAuthCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Authenticate with an Actual server",
-		Long:  "Authenticate and store local credentials used by other commands.",
-	}
-	cmd.AddCommand(newAuthLoginCmd())
-	return cmd
-}
-
-func newAuthLoginCmd() *cobra.Command {
+func newInitCmd() *cobra.Command {
 	var serverURL, budgetID, password, budgetPassword string
 
 	cmd := &cobra.Command{
-		Use:   "login",
-		Short: "Log in and save local config",
-		Long:  "Prompt for credentials (when missing) and store them in local config. Prefer `actual-cli init` for first-run setup.",
-		Example: `  actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
-  actual-cli auth login`,
+		Use:   "init",
+		Short: "Interactive first-run setup wizard",
+		Long:  "Configure server URL, budget sync ID, password, test connection, and save local config.",
+		Example: `  actual-cli init
+  actual-cli init --server http://localhost:5006 --budget <SYNC_ID> --password "$ACTUAL_PASSWORD"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			reader := bufio.NewReader(os.Stdin)
 			isTTY := term.IsTerminal(int(os.Stdin.Fd()))
+			reader := bufio.NewReader(os.Stdin)
 
 			if serverURL == "" {
 				if !isTTY {
@@ -63,18 +53,31 @@ func newAuthLoginCmd() *cobra.Command {
 				}
 				password = string(pw)
 			}
+
 			if err := validateServerURL(serverURL); err != nil {
 				return err
 			}
 			if strings.TrimSpace(budgetID) == "" {
 				return fmt.Errorf("budget sync ID is required")
 			}
-
-			cfg := &config.Config{ServerURL: strings.TrimSpace(serverURL), Password: password, BudgetID: strings.TrimSpace(budgetID), BudgetPassword: budgetPassword}
-			var check bridge.AuthCheckResponse
-			if err := runBridge(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &check); err != nil {
-				return fmt.Errorf("auth failed: %w", err)
+			if strings.TrimSpace(password) == "" {
+				return fmt.Errorf("password is required")
 			}
+
+			cfg := &config.Config{
+				ServerURL:      strings.TrimSpace(serverURL),
+				Password:       password,
+				BudgetID:       strings.TrimSpace(budgetID),
+				BudgetPassword: budgetPassword,
+			}
+
+			fmt.Print("Testing connection... ")
+			if err := runBridge(cmd.Context(), "auth-check", bridge.Request{Config: cfg}, &bridge.AuthCheckResponse{}); err != nil {
+				fmt.Println("failed")
+				return fmt.Errorf("connection test failed: %w", err)
+			}
+			fmt.Println("ok")
+
 			if err := config.Save(cfg); err != nil {
 				return err
 			}
@@ -87,5 +90,6 @@ func newAuthLoginCmd() *cobra.Command {
 	cmd.Flags().StringVar(&budgetID, "budget", "", "Budget sync ID")
 	cmd.Flags().StringVar(&password, "password", "", "Actual server password")
 	cmd.Flags().StringVar(&budgetPassword, "budget-password", "", "Budget encryption password (optional)")
+
 	return cmd
 }

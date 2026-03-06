@@ -50,6 +50,21 @@ changelog:
       - "^test:"
       - "^chore:"
 
+brews:
+  - ids:
+      - actual-cli
+    name: actual-cli
+    repository:
+      owner: morliont
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/morliont/actual-budget-cli"
+    description: "Command line interface for Actual Budget"
+    license: "MIT"
+    test: |
+      system "#{bin}/actual-cli", "--version"
+
 release:
   github:
     owner: morliont

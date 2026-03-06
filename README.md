@@ -1,236 +1,51 @@
 # actual-budget-cli
 
-Open-source-ready Go CLI for Actual Budget.
+CLI for [Actual Budget](https://actualbudget.org/).
 
-> Note: Actual has no public REST API. This CLI uses a Node bridge powered by `@actual-app/api` while keeping CLI UX and architecture in Go.
+> Actual has no public REST API. This CLI uses a Node bridge powered by `@actual-app/api` with a Go command UX.
 
-## Features (MVP)
+## Quick install
 
-- `actual-cli auth login`
-- `actual-cli accounts list [--json]`
-- `actual-cli transactions list [--account <id>] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--limit N] [--json]`
-- `actual-cli budgets summary [--json]`
-- `actual-cli --version` (includes build metadata)
+### Homebrew (macOS/Linux)
 
-## Requirements
+```bash
+brew install morliont/tap/actual-cli
+```
 
-- Go 1.22+
-- Node.js 20+
-- Access to an Actual server
+### One-line installer (Linux/macOS)
 
-## Installation
+```bash
+curl -fsSL https://raw.githubusercontent.com/morliont/actual-budget-cli/main/scripts/install.sh | sh
+```
 
-### Option A: Install from source (Go)
+### Go install
 
 ```bash
 go install github.com/morliont/actual-budget-cli/cmd/actual-cli@latest
 ```
 
-### Option B: Build locally
-
-```bash
-git clone https://github.com/morliont/actual-budget-cli.git
-cd actual-budget-cli
-make setup
-make build
-./bin/actual-cli --version
-```
-
-### Option C: Prebuilt binaries
-
-For tagged releases, download the archive for your platform from GitHub Releases.
-
-Each release publishes:
-- platform archives (`actual-cli_<version>_<os>_<arch>.tar.gz` / `.zip`)
-- `checksums.txt`
-- keyless Sigstore signature + certificate for checksums (`checksums.txt.sig`, `checksums.txt.pem`)
-- GitHub build provenance attestation for `checksums.txt`
-
-## Verify release integrity & provenance
-
-Example for `v0.1.0` on Linux amd64:
-
-```bash
-TAG=v0.1.0
-ASSET=actual-cli_${TAG}_linux_amd64.tar.gz
-
-curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/${ASSET}
-curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt
-curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt.sig
-curl -LO https://github.com/morliont/actual-budget-cli/releases/download/${TAG}/checksums.txt.pem
-```
-
-1) Verify the checksum signature (keyless OIDC via GitHub Actions):
-
-```bash
-cosign verify-blob \
-  --certificate checksums.txt.pem \
-  --signature checksums.txt.sig \
-  --certificate-identity-regexp '^https://github.com/morliont/actual-budget-cli/.github/workflows/release.yml@refs/tags/v.*$' \
-  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  checksums.txt
-```
-
-2) Verify archive checksum:
-
-```bash
-sha256sum --ignore-missing -c checksums.txt
-```
-
-3) Verify GitHub provenance attestation for `checksums.txt`:
-
-```bash
-gh attestation verify checksums.txt \
-  --repo morliont/actual-budget-cli
-```
-
-For maintainers and automation details, see [RELEASE.md](./RELEASE.md).
-
 ## Quick start
 
 ```bash
-./bin/actual-cli auth login --server http://localhost:5006 --budget <SYNC_ID>
+actual-cli init
+actual-cli accounts list
+actual-cli transactions list --limit 20
+actual-cli budgets summary
 ```
 
-You will be prompted for your server password (not echoed).
+## Commands
 
-## Usage examples
+- `actual-cli init` — first-run setup wizard (TTY-aware)
+- `actual-cli auth login` — explicit login flow
+- `actual-cli accounts list`
+- `actual-cli transactions list`
+- `actual-cli budgets summary`
 
-```bash
-# list accounts
-./bin/actual-cli accounts list
+## Docs
 
-# list transactions for one account and date range
-./bin/actual-cli transactions list --account <ACCOUNT_ID> --from 2026-01-01 --to 2026-01-31 --limit 50
-
-# machine-readable output
-./bin/actual-cli transactions list --json
-
-# budget summary (current month)
-./bin/actual-cli budgets summary
-```
-
-## Command structure
-
-- `auth` — authentication flows (`login`)
-- `accounts` — account queries (`list`)
-- `transactions` — transaction queries (`list`)
-- `budgets` — budget summaries (`summary`)
-
-For command-specific help:
-
-```bash
-./bin/actual-cli --help
-./bin/actual-cli <command> --help
-```
-
-## Version information
-
-Builds include version metadata wired via Go ldflags.
-
-```bash
-./bin/actual-cli --version
-# Example output:
-# v0.1.0 (commit a1b2c3d, built 2026-03-06T06:00:00Z)
-```
-
-## Validation rules
-
-The CLI validates input before bridge execution:
-
-- `auth login --server` must include both scheme and host
-- `transactions list --from/--to` must use `YYYY-MM-DD`
-- `transactions list --from` must not be after `--to`
-- `transactions list --limit` must be greater than `0`
-
-## Config & security
-
-Config is stored at:
-
-- `~/.config/actual-cli/config.json` (permission `0600`)
-- budget cache at `~/.local/share/actual-cli`
-
-Security notes:
-
-- Never commit config files or secrets
-- Use environment/secret managers in CI
-- For self-signed certs, set `NODE_EXTRA_CA_CERTS` if needed
-- Credentials and bridge artifacts are written with locked-down permissions
-- Bridge request payloads are sent over stdin (not process args)
-
-Bridge execution timeout:
-
-- Default timeout is `30s`
-- Configure via `ACTUAL_CLI_BRIDGE_TIMEOUT` (`45s`, `2m`, or integer seconds)
-
-## Release process
-
-Maintainers can create a tagged release with:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-Tagging triggers GitHub Actions to:
-
-1. run lint/tests/build,
-2. run GoReleaser for deterministic multi-platform archives + `checksums.txt`,
-3. sign `checksums.txt` with Sigstore cosign keyless OIDC,
-4. generate and publish GitHub build provenance attestation for `checksums.txt`,
-5. publish release assets.
-
-For local dry runs:
-
-```bash
-make goreleaser-check
-make goreleaser-dry-run
-make release-notes
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development and PR workflow.
-
-Project policies:
-
-- [Security policy](./SECURITY.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
-
-## Development
-
-```bash
-make lint
-make test
-make build
-make fmt-check
-```
-
-## Troubleshooting
-
-- **`request timed out after ...`**
-  - Increase bridge timeout: `export ACTUAL_CLI_BRIDGE_TIMEOUT=60s`
-  - Retry and verify server responsiveness.
-- **`network error while contacting Actual server`**
-  - Confirm `--server` URL and port.
-  - Ensure the Actual server is reachable from your machine.
-  - Check VPN/firewall/proxy settings.
-- **`bridge runtime unavailable`**
-  - Install Node.js 20+ and ensure `node` is available in `PATH`.
-- **TLS / self-signed cert issues**
-  - Set `NODE_EXTRA_CA_CERTS` to your CA bundle when needed.
-
-### Internal bridge contracts
-
-The app layer uses typed DTOs in `internal/bridge/types.go` for core bridge request/response shapes.
-For commands that support `--json`, payloads are kept as `json.RawMessage` slices to preserve machine-readable output compatibility while still using typed row decoders for table output.
-
-## CI
-
-GitHub Actions workflow runs:
-
-- `npm ci`
-- `make lint`
-- `make test`
-- `make build`
-- `make fmt-check`
+- [Install guide](docs/install.md)
+- [Release verification](docs/release-verification.md)
+- [Security](docs/security.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Advanced usage](docs/advanced.md)
+- [Release process](RELEASE.md)

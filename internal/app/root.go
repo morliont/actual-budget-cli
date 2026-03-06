@@ -21,6 +21,6 @@ from scripts or your terminal.`,
 	}
 
 	cmd.SetVersionTemplate("{{.Version}}\n")
-	cmd.AddCommand(newAuthCmd(), newAccountsCmd(), newTransactionsCmd(), newBudgetsCmd())
+	cmd.AddCommand(newInitCmd(), newAuthCmd(), newAccountsCmd(), newTransactionsCmd(), newBudgetsCmd())
 	return cmd
 }
