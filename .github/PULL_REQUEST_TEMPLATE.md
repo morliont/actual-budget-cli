@@ -2,6 +2,12 @@
 
 - 
 
+## Linear
+
+- Issue key: <!-- e.g. ABC-123 -->
+- State transition: <!-- In Progress -> In Review -->
+- URL:
+
 ## Changes
 
 - 
@@ -13,7 +19,9 @@
 - [ ] `make build`
 - [ ] `make fmt-check`
 
-## Checklist
+## Workflow checklist
 
-- [ ] Docs updated (if needed)
+- [ ] Scope matches ticket (no silent expansion)
+- [ ] Docs updated (if behavior changed)
+- [ ] Required env vars documented (if any)
 - [ ] Breaking changes called out (if any)

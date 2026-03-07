@@ -49,3 +49,10 @@ actual-cli budgets summary
 - [Troubleshooting](docs/troubleshooting.md)
 - [Advanced usage](docs/advanced.md)
 - [Release process](RELEASE.md)
+
+## Orchestration
+
+For ticket execution flow (Rudy orchestrates, Francois codes, Linear tracks), see:
+
+- [Workflow definition](WORKFLOW.md)
+- [Orchestration guide + operator runbook](docs/orchestration.md)
