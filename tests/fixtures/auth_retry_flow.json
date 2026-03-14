@@ -1,0 +1,11 @@
+{
+  "name": "transient-network-then-success",
+  "args": ["accounts", "list"],
+  "bridgeErrors": [
+    "network error while contacting Actual server",
+    ""
+  ],
+  "maxAttempts": 2,
+  "wantAttempts": 2,
+  "wantSuccess": true
+}

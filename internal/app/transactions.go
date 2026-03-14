@@ -57,6 +57,9 @@ func newTransactionsListCmd() *cobra.Command {
 			if err := runBridge(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: bridge.TransactionsListArgs{AccountID: accountID, From: from, To: to, Limit: limit}}, &res); err != nil {
 				return err
 			}
+			if useAgentJSON(cmd) {
+				return printJSON(successEnvelope(cmd, map[string]any{"transactions": res.Transactions}))
+			}
 			if asJSON {
 				return printJSON(res.Transactions)
 			}

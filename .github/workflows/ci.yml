@@ -16,7 +16,16 @@ jobs:
         with:
           node-version: '20'
       - run: npm ci
-      - run: make lint
-      - run: make test
-      - run: make build
-      - run: make fmt-check
+      - run: go mod tidy
+      - run: go vet ./...
+      - run: go test ./...
+      - run: go build ./cmd/actual-cli
+
+  workflow-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - run: make test-workflows

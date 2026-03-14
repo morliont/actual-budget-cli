@@ -18,7 +18,7 @@ func TestRootCommandMetadata(t *testing.T) {
 		t.Fatalf("expected version metadata to be set")
 	}
 
-	for _, name := range []string{"init", "accounts", "auth", "budgets", "transactions"} {
+	for _, name := range []string{"accounts", "auth", "budgets", "transactions", "doctor"} {
 		if _, _, err := cmd.Find([]string{name}); err != nil {
 			t.Fatalf("expected %q subcommand: %v", name, err)
 		}
@@ -37,7 +37,7 @@ func TestRootHelpIncludesMajorCommands(t *testing.T) {
 	}
 
 	help := buf.String()
-	for _, section := range []string{"init", "auth", "accounts", "transactions", "budgets"} {
+	for _, section := range []string{"auth", "accounts", "transactions", "budgets", "doctor"} {
 		if !strings.Contains(help, section) {
 			t.Fatalf("expected help output to include %q", section)
 		}

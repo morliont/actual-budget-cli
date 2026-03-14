@@ -35,6 +35,9 @@ func newAccountsListCmd() *cobra.Command {
 			if err := runBridge(cmd.Context(), "accounts-list", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
 			}
+			if useAgentJSON(cmd) {
+				return printJSON(successEnvelope(cmd, map[string]any{"accounts": res.Accounts}))
+			}
 			if asJSON {
 				return printJSON(res.Accounts)
 			}

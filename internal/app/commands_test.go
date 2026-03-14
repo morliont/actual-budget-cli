@@ -10,19 +10,28 @@ import (
 
 	"github.com/morliont/actual-budget-cli/internal/bridge"
 	"github.com/morliont/actual-budget-cli/internal/config"
+	"github.com/morliont/actual-budget-cli/internal/output"
 )
 
 func withAppDeps(t *testing.T) {
 	t.Helper()
 	origLoadConfig := loadConfig
 	origRunBridge := runBridge
+	origSaveConfig := saveConfig
 	origPrintJSON := printJSON
 	origPrintTable := printTable
+	origReadPassword := readPassword
+	origGetenv := getenv
+	origLookPath := lookPath
 	t.Cleanup(func() {
 		loadConfig = origLoadConfig
+		saveConfig = origSaveConfig
 		runBridge = origRunBridge
 		printJSON = origPrintJSON
 		printTable = origPrintTable
+		readPassword = origReadPassword
+		getenv = origGetenv
+		lookPath = origLookPath
 	})
 }
 
@@ -119,5 +128,40 @@ func TestAccountsList_TableDecodeFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "invalid account payload") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestAccountsList_AgentJSONEnvelope(t *testing.T) {
+	withAppDeps(t)
+	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
+	runBridge = func(_ context.Context, _ string, _ bridge.Request, out any) error {
+		resp := out.(*bridge.AccountsListResponse)
+		resp.Accounts = []json.RawMessage{json.RawMessage(`{"id":"acc-1","name":"Checking","type":"bank","offbudget":false,"closed":false}`)}
+		return nil
+	}
+
+	var got any
+	printJSON = func(v any) error {
+		got = v
+		return nil
+	}
+
+	cmd := newAccountsListCmd()
+	cmd.Flags().Bool(agentJSONFlag, false, "")
+	cmd.Flags().String(correlationIDFlag, "", "")
+	cmd.SetArgs([]string{"--agent-json", "--correlation-id", "corr-123"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	env, ok := got.(output.Envelope)
+	if !ok {
+		t.Fatalf("expected output.Envelope, got %T", got)
+	}
+	if !env.OK || env.Error != nil {
+		t.Fatalf("expected success envelope, got %+v", env)
+	}
+	if env.Meta == nil || env.Meta.CorrelationID != "corr-123" {
+		t.Fatalf("expected correlation id in envelope meta, got %+v", env.Meta)
 	}
 }

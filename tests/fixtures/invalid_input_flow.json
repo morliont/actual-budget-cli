@@ -1,0 +1,6 @@
+{
+  "name": "invalid-date-short-circuit",
+  "args": ["transactions", "list", "--from", "03-01-2026"],
+  "wantErrContains": "invalid --from value",
+  "wantBridgeCalls": 0
+}

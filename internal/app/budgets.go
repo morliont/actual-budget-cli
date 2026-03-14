@@ -18,6 +18,27 @@ func newBudgetsCmd() *cobra.Command {
 	return cmd
 }
 
+func budgetSummaryAgentPayload(res bridge.BudgetSummaryResponse) (map[string]any, error) {
+	var raw map[string]any
+	if err := json.Unmarshal(res.Budget, &raw); err != nil {
+		return nil, fmt.Errorf("invalid budget payload: %w", err)
+	}
+	extra := map[string]any{}
+	for k, v := range raw {
+		if k == "income" || k == "budgeted" || k == "spent" {
+			continue
+		}
+		extra[k] = v
+	}
+	return map[string]any{
+		"month":    res.Month,
+		"income":   raw["income"],
+		"budgeted": raw["budgeted"],
+		"spent":    raw["spent"],
+		"extra":    extra,
+	}, nil
+}
+
 func newBudgetsSummaryCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -34,6 +55,13 @@ func newBudgetsSummaryCmd() *cobra.Command {
 			var res bridge.BudgetSummaryResponse
 			if err := runBridge(cmd.Context(), "budgets-summary", bridge.Request{Config: cfg}, &res); err != nil {
 				return err
+			}
+			if useAgentJSON(cmd) {
+				agentBudget, err := budgetSummaryAgentPayload(res)
+				if err != nil {
+					return err
+				}
+				return printJSON(successEnvelope(cmd, map[string]any{"budget": agentBudget}))
 			}
 			if asJSON {
 				return printJSON(res)

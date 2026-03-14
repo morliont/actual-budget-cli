@@ -1,0 +1,14 @@
+[
+  {
+    "name": "auth-check-success",
+    "bridgeError": "",
+    "wantErrContains": "",
+    "wantRetryable": false
+  },
+  {
+    "name": "auth-check-fail",
+    "bridgeError": "auth failed: unauthorized",
+    "wantErrContains": "auth failed",
+    "wantRetryable": false
+  }
+]

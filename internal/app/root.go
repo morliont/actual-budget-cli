@@ -6,6 +6,7 @@ import (
 )
 
 func NewRootCmd() *cobra.Command {
+	var agentJSON bool
 	cmd := &cobra.Command{
 		Use:   "actual-cli",
 		Short: "Command line interface for Actual Budget",
@@ -20,7 +21,12 @@ from scripts or your terminal.`,
 		Version: version.String(),
 	}
 
+	var nonInteractive bool
 	cmd.SetVersionTemplate("{{.Version}}\n")
-	cmd.AddCommand(newInitCmd(), newAuthCmd(), newAccountsCmd(), newTransactionsCmd(), newBudgetsCmd())
+	var correlationID string
+	cmd.PersistentFlags().BoolVar(&agentJSON, agentJSONFlag, false, "Output stable machine-readable JSON envelope for agents")
+	cmd.PersistentFlags().BoolVar(&nonInteractive, nonInteractiveFlag, false, "Disable interactive prompts; fail fast on missing required inputs")
+	cmd.PersistentFlags().StringVar(&correlationID, correlationIDFlag, "", "Optional trace/correlation ID for logs and --agent-json output (or ACTUAL_CLI_CORRELATION_ID)")
+	cmd.AddCommand(newAuthCmd(), newAccountsCmd(), newTransactionsCmd(), newBudgetsCmd(), newDoctorCmd())
 	return cmd
 }
