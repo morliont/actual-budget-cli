@@ -45,9 +45,11 @@ Canonical codes: `AUTH_FAILED`, `NETWORK_UNREACHABLE`, `TIMEOUT`, `INVALID_INPUT
 
 ## Capability docs
 
-- `skills/auth-check.md`
-- `skills/accounts-list.md`
-- `skills/transactions-list.md`
-- `skills/budgets-summary.md`
+- `CLAUDE.md` (agent entrypoint)
+- `.claude/skills/auth-check/SKILL.md`
+- `.claude/skills/accounts-list/SKILL.md`
+- `.claude/skills/transactions-list/SKILL.md`
+- `.claude/skills/budgets-summary/SKILL.md`
+- `skills/*.md` (legacy compatibility pointers)
 - `docs/capability-map.md`
 - `docs/agent-contract.md`

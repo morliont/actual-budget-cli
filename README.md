@@ -50,15 +50,17 @@ For command-specific help:
 
 ## Agent / Subagent Docs
 
+- [CLAUDE.md](./CLAUDE.md) — canonical agent entrypoint and operating rules
 - [AGENTS.md](./AGENTS.md) — operator-focused quickstart for orchestration flows
 - [docs/capability-map.md](./docs/capability-map.md) — intent routing map (intent → command → output/errors)
 - [docs/agent-contract.md](./docs/agent-contract.md) — JSON envelope contract (`--agent-json`)
 - [docs/agent-contract-changelog.md](./docs/agent-contract-changelog.md) — versioned planner-facing contract changes
-- Skills:
-  - [skills/auth-check.md](./skills/auth-check.md)
-  - [skills/accounts-list.md](./skills/accounts-list.md)
-  - [skills/transactions-list.md](./skills/transactions-list.md)
-  - [skills/budgets-summary.md](./skills/budgets-summary.md)
+- Canonical skill layout (`.claude/skills/<skill>/SKILL.md`):
+  - [auth-check](./.claude/skills/auth-check/SKILL.md)
+  - [accounts-list](./.claude/skills/accounts-list/SKILL.md)
+  - [transactions-list](./.claude/skills/transactions-list/SKILL.md)
+  - [budgets-summary](./.claude/skills/budgets-summary/SKILL.md)
+- Legacy compatibility pointers remain under [`./skills/`](./skills/)
 
 ## Version Information
 

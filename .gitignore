@@ -1,4 +1,24 @@
+# Build/test artifacts
 bin/
 dist/
-node_modules/
 coverage.out
+*.test
+*.prof
+
+# Dependencies
+node_modules/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local runtime/config materialization
+.tmp/
+tmp/
+.cache/
+.DS_Store

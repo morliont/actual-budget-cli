@@ -29,9 +29,11 @@ Use this map for tool-agnostic orchestration (Codex/subagents/scripts).
 
 ## Related docs
 
+- `../CLAUDE.md`
 - `../AGENTS.md`
 - `./agent-contract.md`
-- `../skills/auth-check.md`
-- `../skills/accounts-list.md`
-- `../skills/transactions-list.md`
-- `../skills/budgets-summary.md`
+- `../.claude/skills/auth-check/SKILL.md`
+- `../.claude/skills/accounts-list/SKILL.md`
+- `../.claude/skills/transactions-list/SKILL.md`
+- `../.claude/skills/budgets-summary/SKILL.md`
+- `../skills/*.md` (legacy compatibility pointers)
