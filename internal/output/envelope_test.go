@@ -9,6 +9,7 @@ func TestMapErrorCoreCodes(t *testing.T) {
 		wantCode  string
 		retryable bool
 	}{
+		{name: "read_only", err: testErr("read-only mode blocked mutating command: actual-cli auth login"), wantCode: "READ_ONLY_BLOCKED", retryable: false},
 		{name: "auth", err: testErr("auth failed: unauthorized"), wantCode: "AUTH_FAILED", retryable: false},
 		{name: "network", err: testErr("network error while contacting Actual server"), wantCode: "NETWORK_UNREACHABLE", retryable: true},
 		{name: "timeout", err: testErr("request timed out after 30s"), wantCode: "TIMEOUT", retryable: true},

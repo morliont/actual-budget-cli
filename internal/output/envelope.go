@@ -52,6 +52,8 @@ func MapError(err error) EnvelopeError {
 	lower := strings.ToLower(msg)
 
 	switch {
+	case strings.Contains(lower, "read-only mode blocked mutating command"):
+		return EnvelopeError{Code: "READ_ONLY_BLOCKED", Message: msg, Retryable: false}
 	case strings.Contains(lower, "auth failed"),
 		strings.Contains(lower, "unauthorized"),
 		strings.Contains(lower, "forbidden"),

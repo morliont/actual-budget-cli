@@ -11,6 +11,7 @@ Open-source-ready Go CLI for Actual Budget.
 - `actual-cli transactions list [--account <id>] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--limit N] [--json]`
 - `actual-cli budgets summary [--json]`
 - `actual-cli doctor` (readiness checks; supports `--agent-json`)
+- Read-only safety mode via `ACTUAL_CLI_READ_ONLY=true` or `--read-only`
 - `actual-cli --version` (includes build metadata)
 
 ## Requirements
@@ -47,6 +48,22 @@ For command-specific help:
 ./bin/actual-cli --help
 ./bin/actual-cli <command> --help
 ```
+
+## Read-only safety mode
+
+Use read-only mode in automation to prevent accidental mutations:
+
+```bash
+export ACTUAL_CLI_READ_ONLY=true
+./bin/actual-cli auth check
+./bin/actual-cli accounts list
+```
+
+- Enable via env: `ACTUAL_CLI_READ_ONLY=true`
+- Enable/disable per call via flag: `--read-only` / `--read-only=false`
+- In read-only mode, mutating commands are blocked with deterministic error (`READ_ONLY_BLOCKED` in `--agent-json` mode).
+- Current mutating command classification: `auth login` (writes local config).
+- Read-only-safe commands include: `doctor`, `auth check` (`auth status`), `accounts list`, `transactions list`, `budgets summary`.
 
 ## Agent / Subagent Docs
 

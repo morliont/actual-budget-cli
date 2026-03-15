@@ -16,6 +16,9 @@ Use this map for tool-agnostic orchestration (Codex/subagents/scripts).
 
 - Prefer `--agent-json` for deterministic parsing.
 - Prefer `--non-interactive` for unattended runs.
+- For automation safety, enable read-only mode with `ACTUAL_CLI_READ_ONLY=true` (or `--read-only`).
+- If a mutating command is called while read-only is active, the command fails with `READ_ONLY_BLOCKED`.
+- Override env default explicitly with `--read-only=false` when mutation is intentional.
 - Envelope contract:
   - success: `{ "ok": true, "data": ..., "meta": { "correlationId"? } }`
   - failure: `{ "ok": false, "error": { "code", "message", "retryable" }, "meta": { "correlationId"? } }`

@@ -13,6 +13,7 @@ actual-cli --non-interactive <command>
 
 - `--agent-json`: stable machine-readable JSON envelope output.
 - `--non-interactive`: disables prompts and fails fast if required input is missing.
+- `--read-only`: blocks mutating commands; default can be set with `ACTUAL_CLI_READ_ONLY=true`.
 - `--correlation-id`: optional trace identifier (or `ACTUAL_CLI_CORRELATION_ID`) echoed in envelope `meta.correlationId`.
 
 Without these flags, existing human-oriented interactive behavior stays unchanged.
@@ -88,6 +89,20 @@ or on error:
 - Core fields (`month`, `income`, `budgeted`, `spent`) are stable.
 - Any additional/provider-specific fields are placed under `extra` for forward compatibility.
 
+### Read-only mode behavior
+
+Read-only mode is intended for automation safety:
+
+- Enable globally: `ACTUAL_CLI_READ_ONLY=true`
+- Enable per invocation: `--read-only`
+- Override env default when intentional mutation is required: `--read-only=false`
+
+When enabled, mutating commands are blocked before execution. Current mutating classification includes:
+
+- `auth login` (writes local config)
+
+Read-only-safe commands continue to work (`doctor`, `auth check/status`, `accounts list`, `transactions list`, `budgets summary`).
+
 ### Auth password sources (`auth login`)
 
 For automation, server password is resolved with explicit precedence:
@@ -106,6 +121,9 @@ Input flags/arguments otherwise remain backward-compatible with current CLI beha
 
 Canonical codes introduced in Phase 1:
 
+- `READ_ONLY_BLOCKED`
+  - Mutating command attempted while read-only mode is enabled.
+  - Typical cause: `ACTUAL_CLI_READ_ONLY=true` (or `--read-only`) with a mutating command like `auth login`.
 - `AUTH_FAILED`
   - Authentication/authorization failures.
   - Typical cause: wrong credentials, unauthorized access.

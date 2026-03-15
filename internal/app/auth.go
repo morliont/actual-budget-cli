@@ -87,6 +87,7 @@ func newAuthLoginCmd() *cobra.Command {
 	cmd.Flags().StringVar(&budgetID, "budget", "", "Budget sync ID")
 	cmd.Flags().StringVar(&budgetPassword, "budget-password", "", "Budget encryption password (optional)")
 	cmd.Flags().BoolVar(&passwordFromStdin, "password-stdin", false, "Read server password from stdin (preferred for automation)")
+	markMutating(cmd)
 	return cmd
 }
 
