@@ -1,5 +1,18 @@
 import * as api from '@actual-app/api';
 
+// Keep bridge stdout strictly machine-readable JSON.
+// Some upstream libs may emit informational logs; route them to stderr.
+const forwardToStderr = (...args) => {
+  try {
+    process.stderr.write(`${args.map((a) => String(a)).join(' ')}\n`);
+  } catch {
+    // no-op
+  }
+};
+console.log = forwardToStderr;
+console.info = forwardToStderr;
+console.debug = () => {};
+
 function fail(message) {
   process.stderr.write(String(message));
   process.exit(1);
