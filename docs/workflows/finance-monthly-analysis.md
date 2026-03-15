@@ -2,6 +2,8 @@
 
 Use this workflow when operators or subagents need a deterministic month-over-month budget variance view.
 
+Decision layer reference: [`../skills/finance/finance-monthly-analysis.md`](../skills/finance/finance-monthly-analysis.md)
+
 ## Command
 
 ```bash
