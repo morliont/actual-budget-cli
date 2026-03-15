@@ -143,18 +143,59 @@ or on error:
       "month": "2026-01",
       "categoryCount": 12,
       "groupCount": 4,
-      "raw": { "budgeted": 10000, "spent": 9200, "remaining": 800, "variance": 800 },
-      "normalized": { "budgetedAbs": 10000, "spentAbs": 9200, "remainingSigned": 800, "varianceSigned": 800 },
+      "raw": {
+        "budgeted": 10000,
+        "spent": -9200,
+        "net_spent": -9200,
+        "outflow_spent": 9200,
+        "inflow_offsets": 0,
+        "remaining": 19200,
+        "variance": 19200,
+        "net_variance": 19200,
+        "planning_variance": 800
+      },
+      "normalized": {
+        "budgetedAbs": 10000,
+        "spentAbs": 9200,
+        "remainingSigned": 19200,
+        "varianceSigned": 19200,
+        "planningVarianceSigned": 800
+      },
       "groups": [],
       "checks": [],
-      "quality": { "confidence": "high", "warnings": [], "checkCount": 6, "failedCheckCount": 0 }
+      "quality": { "confidence": "high", "warnings": [], "checkCount": 11, "failedCheckCount": 0 }
     }
   ],
-  "summary": { "budgeted": 10000, "spent": 9200, "remaining": 800, "variance": 800 },
-  "summaryNormalized": { "budgetedAbs": 10000, "spentAbs": 9200, "remainingSigned": 800, "varianceSigned": 800 },
+  "summary": {
+    "budgeted": 10000,
+    "spent": -9200,
+    "net_spent": -9200,
+    "outflow_spent": 9200,
+    "inflow_offsets": 0,
+    "remaining": 19200,
+    "variance": 19200,
+    "net_variance": 19200,
+    "planning_variance": 800
+  },
+  "summaryNormalized": {
+    "budgetedAbs": 10000,
+    "spentAbs": 9200,
+    "remainingSigned": 19200,
+    "varianceSigned": 19200,
+    "planningVarianceSigned": 800
+  },
   "quality": { "confidence": "high", "warnings": [], "strictMode": true, "monthCount": 1, "failedMonthCount": 0 }
 }
 ```
+
+Semantics for spend/variance fields:
+
+- `net_spent` is the native Actual signed value (`spent` remains as a backward-compatible alias of `net_spent`).
+- `outflow_spent` is expense-only magnitude (`abs(spent)` when category spent is negative).
+- `inflow_offsets` is positive signed offsets/refunds/inflows (`spent` when category spent is positive).
+- Identity: `net_spent = inflow_offsets - outflow_spent`.
+- `net_variance` is reconciled against native math (`budgeted - net_spent`), and `variance` remains a backward-compatible alias.
+- `planning_variance` uses outflow semantics (`budgeted - outflow_spent`) and is the default field for planning narratives.
 
 Strict mode behavior:
 

@@ -13,17 +13,23 @@ import (
 )
 
 type varianceAmounts struct {
-	Budgeted  float64 `json:"budgeted"`
-	Spent     float64 `json:"spent"`
-	Remaining float64 `json:"remaining"`
-	Variance  float64 `json:"variance"`
+	Budgeted         float64 `json:"budgeted"`
+	Spent            float64 `json:"spent"` // legacy alias of net_spent
+	NetSpent         float64 `json:"net_spent"`
+	OutflowSpent     float64 `json:"outflow_spent"`
+	InflowOffsets    float64 `json:"inflow_offsets"`
+	Remaining        float64 `json:"remaining"`
+	Variance         float64 `json:"variance"` // legacy alias of net_variance
+	NetVariance      float64 `json:"net_variance"`
+	PlanningVariance float64 `json:"planning_variance"`
 }
 
 type normalizedAmounts struct {
-	BudgetedAbs     float64 `json:"budgetedAbs"`
-	SpentAbs        float64 `json:"spentAbs"`
-	RemainingSigned float64 `json:"remainingSigned"`
-	VarianceSigned  float64 `json:"varianceSigned"`
+	BudgetedAbs          float64 `json:"budgetedAbs"`
+	SpentAbs             float64 `json:"spentAbs"`
+	RemainingSigned      float64 `json:"remainingSigned"`
+	VarianceSigned       float64 `json:"varianceSigned"`
+	PlanningVarianceSign float64 `json:"planningVarianceSigned"`
 }
 
 type varianceGroup struct {
@@ -138,9 +144,12 @@ func newReportsMonthlyVarianceCmd() *cobra.Command {
 				}
 				report.Months = append(report.Months, monthData)
 				report.Summary.Budgeted += monthData.Raw.Budgeted
-				report.Summary.Spent += monthData.Raw.Spent
+				report.Summary.NetSpent += monthData.Raw.NetSpent
+				report.Summary.OutflowSpent += monthData.Raw.OutflowSpent
+				report.Summary.InflowOffsets += monthData.Raw.InflowOffsets
 				report.Summary.Remaining += monthData.Raw.Remaining
-				report.Summary.Variance += monthData.Raw.Variance
+				report.Summary.NetVariance += monthData.Raw.NetVariance
+				report.Summary.PlanningVariance += monthData.Raw.PlanningVariance
 				if monthData.Quality.FailedCheckCount > 0 {
 					failedMonths++
 					strictIssues = append(strictIssues, fmt.Sprintf("%s (%d failed checks)", month, monthData.Quality.FailedCheckCount))
@@ -171,9 +180,9 @@ func newReportsMonthlyVarianceCmd() *cobra.Command {
 
 			rows := make([][]string, 0, len(report.Months))
 			for _, m := range report.Months {
-				rows = append(rows, []string{m.Month, formatCurrencyCentsBE(m.Raw.Budgeted), formatCurrencyCentsBE(m.Raw.Spent), formatCurrencyCentsBE(m.Raw.Remaining), formatCurrencyCentsBE(m.Raw.Variance), m.Quality.Confidence})
+				rows = append(rows, []string{m.Month, formatCurrencyCentsBE(m.Raw.Budgeted), formatCurrencyCentsBE(m.Raw.NetSpent), formatCurrencyCentsBE(m.Raw.OutflowSpent), formatCurrencyCentsBE(m.Raw.InflowOffsets), formatCurrencyCentsBE(m.Raw.PlanningVariance), m.Quality.Confidence})
 			}
-			printTable([]string{"Month", "Budgeted", "Spent", "Remaining", "Variance", "Confidence"}, rows)
+			printTable([]string{"Month", "Budgeted", "Net spent", "Outflow spent", "Inflow offsets", "Planning variance", "Confidence"}, rows)
 			return nil
 		},
 	}
@@ -205,9 +214,18 @@ func loadMonthVariance(cmd *cobra.Command, cfg any, month string) (monthVariance
 		}
 		categoryCount++
 		budgeted := valueOrFallback(row.Budgeted, row.Planned)
-		spent := valueOrFallback(row.Spent, row.Actual)
-		remaining := numberWithFallback(row.Remaining, budgeted-spent)
-		variance := numberWithFallback(row.Variance, budgeted-spent)
+		netSpent := valueOrFallback(row.Spent, row.Actual)
+		outflowSpent := 0.0
+		inflowOffsets := 0.0
+		if netSpent < 0 {
+			outflowSpent = -netSpent
+		} else if netSpent > 0 {
+			inflowOffsets = netSpent
+		}
+		netVariance := budgeted - netSpent
+		planningVariance := budgeted - outflowSpent
+		remaining := numberWithFallback(row.Remaining, netVariance)
+		variance := numberWithFallback(row.Variance, netVariance)
 
 		groupKey := row.GroupID + "|" + row.GroupName
 		g, ok := groupTotals[groupKey]
@@ -218,16 +236,22 @@ func loadMonthVariance(cmd *cobra.Command, cfg any, month string) (monthVariance
 		}
 		g.CategoryCount++
 		g.Raw.Budgeted += budgeted
-		g.Raw.Spent += spent
+		g.Raw.NetSpent += netSpent
+		g.Raw.OutflowSpent += outflowSpent
+		g.Raw.InflowOffsets += inflowOffsets
 		g.Raw.Remaining += remaining
-		g.Raw.Variance += variance
+		g.Raw.NetVariance += variance
+		g.Raw.PlanningVariance += planningVariance
 
 		monthTotals.Budgeted += budgeted
-		monthTotals.Spent += spent
+		monthTotals.NetSpent += netSpent
+		monthTotals.OutflowSpent += outflowSpent
+		monthTotals.InflowOffsets += inflowOffsets
 		monthTotals.Remaining += remaining
-		monthTotals.Variance += variance
+		monthTotals.NetVariance += variance
+		monthTotals.PlanningVariance += planningVariance
 
-		catDelta := sanitizeFinite((budgeted - spent) - remaining)
+		catDelta := sanitizeFinite(netVariance - remaining)
 		if math.Abs(catDelta) > varianceEpsilon {
 			warnings = append(warnings, fmt.Sprintf("%s/%s remaining mismatch", row.GroupName, row.CategoryName))
 		}
@@ -251,19 +275,27 @@ func loadMonthVariance(cmd *cobra.Command, cfg any, month string) (monthVariance
 	groupSum := varianceAmounts{}
 	for _, g := range groups {
 		groupSum.Budgeted += g.Raw.Budgeted
-		groupSum.Spent += g.Raw.Spent
+		groupSum.NetSpent += g.Raw.NetSpent
+		groupSum.OutflowSpent += g.Raw.OutflowSpent
+		groupSum.InflowOffsets += g.Raw.InflowOffsets
 		groupSum.Remaining += g.Raw.Remaining
-		groupSum.Variance += g.Raw.Variance
+		groupSum.NetVariance += g.Raw.NetVariance
+		groupSum.PlanningVariance += g.Raw.PlanningVariance
 	}
 	groupSum = sanitizeVariance(groupSum)
 
 	checks = append(checks,
-		varianceCheck{Name: "identity_remaining", Passed: almostEqual(monthTotals.Budgeted-monthTotals.Spent, monthTotals.Remaining), Message: "month remaining equals budgeted - spent"},
-		varianceCheck{Name: "identity_variance", Passed: almostEqual(monthTotals.Budgeted-monthTotals.Spent, monthTotals.Variance), Message: "month variance equals budgeted - spent"},
+		varianceCheck{Name: "identity_net_spent", Passed: almostEqual(monthTotals.NetSpent, monthTotals.InflowOffsets-monthTotals.OutflowSpent), Message: "month net_spent equals inflow_offsets - outflow_spent"},
+		varianceCheck{Name: "identity_remaining_net", Passed: almostEqual(monthTotals.Budgeted-monthTotals.NetSpent, monthTotals.Remaining), Message: "month remaining equals budgeted - net_spent"},
+		varianceCheck{Name: "identity_variance_net", Passed: almostEqual(monthTotals.Budgeted-monthTotals.NetSpent, monthTotals.NetVariance), Message: "month net_variance equals budgeted - net_spent"},
+		varianceCheck{Name: "identity_planning_variance", Passed: almostEqual(monthTotals.Budgeted-monthTotals.OutflowSpent, monthTotals.PlanningVariance), Message: "month planning_variance equals budgeted - outflow_spent"},
 		varianceCheck{Name: "group_sum_budgeted", Passed: almostEqual(groupSum.Budgeted, monthTotals.Budgeted), Message: "group budgeted totals reconcile with month"},
-		varianceCheck{Name: "group_sum_spent", Passed: almostEqual(groupSum.Spent, monthTotals.Spent), Message: "group spent totals reconcile with month"},
+		varianceCheck{Name: "group_sum_net_spent", Passed: almostEqual(groupSum.NetSpent, monthTotals.NetSpent), Message: "group net_spent totals reconcile with month"},
+		varianceCheck{Name: "group_sum_outflow_spent", Passed: almostEqual(groupSum.OutflowSpent, monthTotals.OutflowSpent), Message: "group outflow_spent totals reconcile with month"},
+		varianceCheck{Name: "group_sum_inflow_offsets", Passed: almostEqual(groupSum.InflowOffsets, monthTotals.InflowOffsets), Message: "group inflow_offsets totals reconcile with month"},
 		varianceCheck{Name: "group_sum_remaining", Passed: almostEqual(groupSum.Remaining, monthTotals.Remaining), Message: "group remaining totals reconcile with month"},
-		varianceCheck{Name: "group_sum_variance", Passed: almostEqual(groupSum.Variance, monthTotals.Variance), Message: "group variance totals reconcile with month"},
+		varianceCheck{Name: "group_sum_net_variance", Passed: almostEqual(groupSum.NetVariance, monthTotals.NetVariance), Message: "group net_variance totals reconcile with month"},
+		varianceCheck{Name: "group_sum_planning_variance", Passed: almostEqual(groupSum.PlanningVariance, monthTotals.PlanningVariance), Message: "group planning_variance totals reconcile with month"},
 	)
 
 	failed := 0
@@ -307,14 +339,19 @@ func monthRange(from, to string) ([]string, error) {
 
 func normalizeAmounts(v varianceAmounts) normalizedAmounts {
 	v = sanitizeVariance(v)
-	return normalizedAmounts{BudgetedAbs: math.Abs(v.Budgeted), SpentAbs: math.Abs(v.Spent), RemainingSigned: v.Remaining, VarianceSigned: v.Variance}
+	return normalizedAmounts{BudgetedAbs: math.Abs(v.Budgeted), SpentAbs: math.Abs(v.NetSpent), RemainingSigned: v.Remaining, VarianceSigned: v.NetVariance, PlanningVarianceSign: v.PlanningVariance}
 }
 
 func sanitizeVariance(v varianceAmounts) varianceAmounts {
 	v.Budgeted = sanitizeFinite(v.Budgeted)
-	v.Spent = sanitizeFinite(v.Spent)
+	v.NetSpent = sanitizeFinite(v.NetSpent)
+	v.OutflowSpent = sanitizeFinite(v.OutflowSpent)
+	v.InflowOffsets = sanitizeFinite(v.InflowOffsets)
 	v.Remaining = sanitizeFinite(v.Remaining)
-	v.Variance = sanitizeFinite(v.Variance)
+	v.NetVariance = sanitizeFinite(v.NetVariance)
+	v.PlanningVariance = sanitizeFinite(v.PlanningVariance)
+	v.Spent = v.NetSpent
+	v.Variance = v.NetVariance
 	return v
 }
 
