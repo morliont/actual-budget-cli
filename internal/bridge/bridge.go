@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -119,7 +120,8 @@ func materializeBridgeScript() (string, func(), error) {
 		return "", nil, fmt.Errorf("read embedded bridge script: %w", err)
 	}
 
-	tmp, err := os.CreateTemp("", "actual-bridge-*.mjs")
+	tmpDir := chooseBridgeScriptDir()
+	tmp, err := os.CreateTemp(tmpDir, "actual-bridge-*.mjs")
 	if err != nil {
 		return "", nil, fmt.Errorf("create bridge script temp file: %w", err)
 	}
@@ -145,4 +147,25 @@ func materializeBridgeScript() (string, func(), error) {
 	}
 
 	return path, cleanup, nil
+}
+
+func chooseBridgeScriptDir() string {
+	// Prefer current working directory when it looks like repo/dev runtime
+	// so Node ESM package resolution can find local node_modules.
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	if wd == "" {
+		return ""
+	}
+	if fileExists(filepath.Join(wd, "package.json")) && fileExists(filepath.Join(wd, "node_modules", "@actual-app", "api", "package.json")) {
+		return wd
+	}
+	return ""
+}
+
+func fileExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && !st.IsDir()
 }
