@@ -72,6 +72,7 @@ or on error:
 - `transactions list` → `data.transactions` (array, optional category enrichment)
 - `budgets summary` → `data.budget` (stable core schema + extensible extras)
 - `budgets categories --month YYYY-MM` → `data.month`, `data.categories[]` (analysis-ready per-category monthly values)
+- `reports monthly-variance --from YYYY-MM --to YYYY-MM [--strict]` → `data.from`, `data.to`, `data.months[]`, `data.summary`, `data.quality`
 - `doctor` → `data.ready` (bool), `data.checks[]`, `data.summary`
 
 ### `budgets summary` schema (`--agent-json`)
@@ -129,6 +130,37 @@ or on error:
 }
 ```
 
+### `reports monthly-variance --from YYYY-MM --to YYYY-MM` schema (`--agent-json`)
+
+`data` shape (deterministic and machine-safe):
+
+```json
+{
+  "from": "2026-01",
+  "to": "2026-03",
+  "months": [
+    {
+      "month": "2026-01",
+      "categoryCount": 12,
+      "groupCount": 4,
+      "raw": { "budgeted": 10000, "spent": 9200, "remaining": 800, "variance": 800 },
+      "normalized": { "budgetedAbs": 10000, "spentAbs": 9200, "remainingSigned": 800, "varianceSigned": 800 },
+      "groups": [],
+      "checks": [],
+      "quality": { "confidence": "high", "warnings": [], "checkCount": 6, "failedCheckCount": 0 }
+    }
+  ],
+  "summary": { "budgeted": 10000, "spent": 9200, "remaining": 800, "variance": 800 },
+  "summaryNormalized": { "budgetedAbs": 10000, "spentAbs": 9200, "remainingSigned": 800, "varianceSigned": 800 },
+  "quality": { "confidence": "high", "warnings": [], "strictMode": true, "monthCount": 1, "failedMonthCount": 0 }
+}
+```
+
+Strict mode behavior:
+
+- `--strict` fails the command when any reconciliation check fails.
+- Without `--strict`, reconciliation failures are reported in `quality` and command succeeds.
+
 ### `transactions list --include-category-names` enrichment
 
 When `--include-category-names` is present, each row in `data.transactions[]` gains:
@@ -150,7 +182,7 @@ When enabled, mutating commands are blocked before execution. Current mutating c
 
 - `auth login` (writes local config)
 
-Read-only-safe commands continue to work (`doctor`, `auth check/status`, `accounts list`, `transactions list`, `budgets summary`).
+Read-only-safe commands continue to work (`doctor`, `auth check/status`, `accounts list`, `transactions list`, `budgets summary`, `budgets categories`, `reports monthly-variance`).
 
 ### Auth password sources (`auth login`)
 

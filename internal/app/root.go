@@ -32,6 +32,6 @@ from scripts or your terminal.`,
 	cmd.PersistentFlags().BoolVar(&nonInteractive, nonInteractiveFlag, false, "Disable interactive prompts; fail fast on missing required inputs")
 	cmd.PersistentFlags().StringVar(&correlationID, correlationIDFlag, "", "Optional trace/correlation ID for logs and --agent-json output (or ACTUAL_CLI_CORRELATION_ID)")
 	cmd.PersistentFlags().BoolVar(&readOnly, readOnlyFlag, readOnlyDefaultFromEnv(), "Block mutating commands (default from ACTUAL_CLI_READ_ONLY)")
-	cmd.AddCommand(newAuthCmd(), newAccountsCmd(), newCategoriesCmd(), newTransactionsCmd(), newBudgetsCmd(), newDoctorCmd())
+	cmd.AddCommand(newAuthCmd(), newAccountsCmd(), newCategoriesCmd(), newTransactionsCmd(), newBudgetsCmd(), newReportsCmd(), newDoctorCmd())
 	return cmd
 }

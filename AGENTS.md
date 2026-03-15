@@ -21,6 +21,7 @@ Recommended command order for first-time setup:
 3. `accounts-list`
 4. `transactions-list`
 5. `budgets-summary`
+6. `reports-monthly-variance` for deterministic monthly analysis
 
 ## Required environment / preconditions
 
@@ -45,11 +46,8 @@ Canonical codes: `AUTH_FAILED`, `NETWORK_UNREACHABLE`, `TIMEOUT`, `INVALID_INPUT
 
 ## Capability docs
 
-- `CLAUDE.md` (agent entrypoint)
-- `.claude/skills/auth-check/SKILL.md`
-- `.claude/skills/accounts-list/SKILL.md`
-- `.claude/skills/transactions-list/SKILL.md`
-- `.claude/skills/budgets-summary/SKILL.md`
-- `skills/*.md` (legacy compatibility pointers)
 - `docs/capability-map.md`
 - `docs/agent-contract.md`
+- `docs/workflows/finance-monthly-analysis.md`
+- `docs/orchestration.md`
+- `skills/*.md` (legacy compatibility pointers)

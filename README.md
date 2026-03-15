@@ -10,6 +10,7 @@ Open-source-ready Go CLI for Actual Budget.
 - `actual-cli accounts list [--json]`
 - `actual-cli transactions list [--account <id>] [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--limit N] [--json]`
 - `actual-cli budgets summary [--json]`
+- `actual-cli reports monthly-variance --from YYYY-MM --to YYYY-MM [--strict] [--json]`
 - `actual-cli doctor` (readiness checks; supports `--agent-json`)
 - Read-only safety mode via `ACTUAL_CLI_READ_ONLY=true` or `--read-only`
 - `actual-cli --version` (includes build metadata)
@@ -39,7 +40,8 @@ Top-level command tree:
 - `auth` — authentication flows (`login`)
 - `accounts` — account queries (`list`)
 - `transactions` — transaction queries (`list`)
-- `budgets` — budget summaries (`summary`)
+- `budgets` — budget summaries (`summary`, `categories`)
+- `reports` — deterministic analysis reports (`monthly-variance`)
 - `doctor` — environment readiness checks
 
 For command-specific help:
@@ -63,20 +65,15 @@ export ACTUAL_CLI_READ_ONLY=true
 - Enable/disable per call via flag: `--read-only` / `--read-only=false`
 - In read-only mode, mutating commands are blocked with deterministic error (`READ_ONLY_BLOCKED` in `--agent-json` mode).
 - Current mutating command classification: `auth login` (writes local config).
-- Read-only-safe commands include: `doctor`, `auth check` (`auth status`), `accounts list`, `transactions list`, `budgets summary`.
+- Read-only-safe commands include: `doctor`, `auth check` (`auth status`), `accounts list`, `transactions list`, `budgets summary`, `budgets categories`, `reports monthly-variance`.
 
 ## Agent / Subagent Docs
 
-- [CLAUDE.md](./CLAUDE.md) — canonical agent entrypoint and operating rules
 - [AGENTS.md](./AGENTS.md) — operator-focused quickstart for orchestration flows
 - [docs/capability-map.md](./docs/capability-map.md) — intent routing map (intent → command → output/errors)
 - [docs/agent-contract.md](./docs/agent-contract.md) — JSON envelope contract (`--agent-json`)
 - [docs/agent-contract-changelog.md](./docs/agent-contract-changelog.md) — versioned planner-facing contract changes
-- Canonical skill layout (`.claude/skills/<skill>/SKILL.md`):
-  - [auth-check](./.claude/skills/auth-check/SKILL.md)
-  - [accounts-list](./.claude/skills/accounts-list/SKILL.md)
-  - [transactions-list](./.claude/skills/transactions-list/SKILL.md)
-  - [budgets-summary](./.claude/skills/budgets-summary/SKILL.md)
+- [docs/workflows/finance-monthly-analysis.md](./docs/workflows/finance-monthly-analysis.md) — operator workflow for deterministic monthly variance analysis
 - Legacy compatibility pointers remain under [`./skills/`](./skills/)
 
 ## Version Information
@@ -132,6 +129,9 @@ Correlation ID support:
 
 # budget summary (current month)
 ./bin/actual-cli budgets summary
+
+# deterministic monthly variance analysis
+./bin/actual-cli reports monthly-variance --from 2026-01 --to 2026-03 --strict
 
 # readiness checks for automation
 ./bin/actual-cli --agent-json --correlation-id run-42 doctor

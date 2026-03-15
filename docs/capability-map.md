@@ -13,6 +13,7 @@ Use this map for tool-agnostic orchestration (Codex/subagents/scripts).
 | `budgets-summary` | `actual-cli --agent-json --non-interactive budgets summary` | Valid config | `data.budget` stable core (`month,income,budgeted,spent`) + `extra` object for provider-specific fields | `AUTH_FAILED`: rerun auth-check; transient network/timeouts retry |
 | `budgets-categories` | `actual-cli --agent-json --non-interactive budgets categories --month YYYY-MM` | Valid config + valid month (`YYYY-MM`) | `data.month` + `data.categories[]` rows (`budgeted/planned,spent/actual,remaining/variance,carryover`) | `INVALID_INPUT`: fix month; auth/network handling same as above |
 | `doctor` | `actual-cli --agent-json doctor` | Node runtime in PATH; config recommended for full readiness | `data.ready` + `data.checks[]` + `data.summary` | If `data.ready=false`, inspect failed checks and remediate locally before orchestration |
+| `reports-monthly-variance` | `actual-cli --agent-json --non-interactive reports monthly-variance --from YYYY-MM --to YYYY-MM [--strict]` | Valid config + valid month range (`from<=to`) | `data.from`, `data.to`, `data.months[]` (raw + normalized per-month/per-group), reconciliation `checks[]`, and `quality` metadata | `INVALID_INPUT`: fix range; with `--strict`, any reconciliation mismatch fails command (non-retryable) |
 
 ## Global execution notes
 
@@ -34,11 +35,7 @@ Use this map for tool-agnostic orchestration (Codex/subagents/scripts).
 
 ## Related docs
 
-- `../CLAUDE.md`
 - `../AGENTS.md`
 - `./agent-contract.md`
-- `../.claude/skills/auth-check/SKILL.md`
-- `../.claude/skills/accounts-list/SKILL.md`
-- `../.claude/skills/transactions-list/SKILL.md`
-- `../.claude/skills/budgets-summary/SKILL.md`
+- `./workflows/finance-monthly-analysis.md`
 - `../skills/*.md` (legacy compatibility pointers)
