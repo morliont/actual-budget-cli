@@ -124,8 +124,32 @@ func TestBudgetsSummary_TableUsesFallbackTotals(t *testing.T) {
 	if !reflect.DeepEqual(headers, wantHeaders) {
 		t.Fatalf("unexpected headers: got %#v want %#v", headers, wantHeaders)
 	}
-	wantRows := [][]string{{"2026-03", "0", "50", "30"}}
+	wantRows := [][]string{{"2026-03", "0,00", "0,50", "0,30"}}
 	if !reflect.DeepEqual(rows, wantRows) {
 		t.Fatalf("unexpected rows: got %#v want %#v", rows, wantRows)
+	}
+}
+
+func TestFormatCurrencyCentsBE(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  float64
+		wanted string
+	}{
+		{name: "zero", input: 0, wanted: "0,00"},
+		{name: "positive", input: 123456, wanted: "1.234,56"},
+		{name: "negative", input: -114819800, wanted: "-1.148.198,00"},
+		{name: "small", input: 50, wanted: "0,50"},
+		{name: "rounding", input: 1234.6, wanted: "12,35"},
+		{name: "scientific input", input: 1.23456e+08, wanted: "1.234.560,00"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := formatCurrencyCentsBE(tc.input)
+			if got != tc.wanted {
+				t.Fatalf("unexpected formatting: got %q want %q", got, tc.wanted)
+			}
+		})
 	}
 }

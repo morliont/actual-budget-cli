@@ -114,7 +114,12 @@ func newBudgetsSummaryCmd() *cobra.Command {
 				return fmt.Errorf("invalid budget payload: %w", err)
 			}
 			totals := budgetSummaryTotals(raw)
-			printTable([]string{"Month", "Income", "Budgeted", "Spent"}, [][]string{{res.Month, fmt.Sprint(totals.Income), fmt.Sprint(totals.Budgeted), fmt.Sprint(totals.Spent)}})
+			printTable([]string{"Month", "Income", "Budgeted", "Spent"}, [][]string{{
+				res.Month,
+				formatCurrencyCentsBE(totals.Income),
+				formatCurrencyCentsBE(totals.Budgeted),
+				formatCurrencyCentsBE(totals.Spent),
+			}})
 			return nil
 		},
 	}
@@ -191,6 +196,43 @@ func numberFromAny(v any) (float64, bool) {
 		}
 	}
 	return 0, false
+}
+
+func formatCurrencyCentsBE(amount float64) string {
+	cents := int64(math.Round(sanitizeFinite(amount)))
+	negative := cents < 0
+	if negative {
+		cents = -cents
+	}
+
+	units := cents / 100
+	fraction := cents % 100
+
+	formattedUnits := formatThousandsDot(units)
+	formatted := fmt.Sprintf("%s,%02d", formattedUnits, fraction)
+	if negative {
+		return "-" + formatted
+	}
+	return formatted
+}
+
+func formatThousandsDot(n int64) string {
+	s := fmt.Sprintf("%d", n)
+	if len(s) <= 3 {
+		return s
+	}
+
+	var b strings.Builder
+	first := len(s) % 3
+	if first == 0 {
+		first = 3
+	}
+	b.WriteString(s[:first])
+	for i := first; i < len(s); i += 3 {
+		b.WriteString(".")
+		b.WriteString(s[i : i+3])
+	}
+	return b.String()
 }
 
 func sanitizeFinite(v float64) float64 {
