@@ -112,6 +112,31 @@ func TestTransactionsList_DefaultArgsPassedToBridge(t *testing.T) {
 	}
 }
 
+func TestTransactionsList_IncludeCategoryNamesPassedToBridge(t *testing.T) {
+	withAppDeps(t)
+	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
+	printTable = func(headers []string, rows [][]string) {}
+
+	runBridge = func(_ context.Context, op string, req bridge.Request, out any) error {
+		if op != "transactions-list" {
+			return errors.New("unexpected op")
+		}
+		args := req.Args.(bridge.TransactionsListArgs)
+		if !args.IncludeCategoryNames {
+			return errors.New("expected include category names")
+		}
+		resp := out.(*bridge.TransactionsListResponse)
+		resp.Transactions = []json.RawMessage{json.RawMessage(`{"date":"2026-03-01","account":"Checking","payee_name":"Coffee","amount":-350,"notes":"Latte","category_name":"Food","category_group_name":"Needs"}`)}
+		return nil
+	}
+
+	cmd := newTransactionsListCmd()
+	cmd.SetArgs([]string{"--include-category-names"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestAccountsList_TableDecodeFailure(t *testing.T) {
 	withAppDeps(t)
 	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }

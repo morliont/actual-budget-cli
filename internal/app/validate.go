@@ -35,6 +35,17 @@ func validateDate(raw, name string) error {
 	return nil
 }
 
+func validateMonth(raw, name string) error {
+	clean := strings.TrimSpace(raw)
+	if clean == "" {
+		return fmt.Errorf("--%s is required (expected YYYY-MM)", name)
+	}
+	if _, err := time.Parse("2006-01", clean); err != nil {
+		return fmt.Errorf("invalid --%s value %q: expected YYYY-MM (example: --%s 2026-03)", name, raw, name)
+	}
+	return nil
+}
+
 func validateLimit(limit int) error {
 	if limit <= 0 {
 		return fmt.Errorf("invalid --limit value %s: must be greater than 0", strconv.Itoa(limit))

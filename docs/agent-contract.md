@@ -68,8 +68,10 @@ or on error:
 - `auth check` → `data.authenticated` (bool), `data.message` (string)
 - `auth login` → `data.message`
 - `accounts list` → `data.accounts` (array)
-- `transactions list` → `data.transactions` (array)
+- `categories list` → `data.categories` (array)
+- `transactions list` → `data.transactions` (array, optional category enrichment)
 - `budgets summary` → `data.budget` (stable core schema + extensible extras)
+- `budgets categories --month YYYY-MM` → `data.month`, `data.categories[]` (analysis-ready per-category monthly values)
 - `doctor` → `data.ready` (bool), `data.checks[]`, `data.summary`
 
 ### `budgets summary` schema (`--agent-json`)
@@ -88,6 +90,53 @@ or on error:
 
 - Core fields (`month`, `income`, `budgeted`, `spent`) are stable.
 - Any additional/provider-specific fields are placed under `extra` for forward compatibility.
+
+### `categories list` schema (`--agent-json`)
+
+`data.categories[]` rows:
+
+```json
+{
+  "id": "cat-id",
+  "name": "Groceries",
+  "group_id": "group-id",
+  "group_name": "Living",
+  "hidden": false,
+  "archived": null
+}
+```
+
+### `budgets categories --month YYYY-MM` schema (`--agent-json`)
+
+`data.categories[]` rows include stable analysis fields:
+
+```json
+{
+  "month": "2026-03",
+  "category_id": "cat-id",
+  "category_name": "Groceries",
+  "category_group_id": "group-id",
+  "category_group_name": "Living",
+  "budgeted": 5000,
+  "planned": 5000,
+  "spent": 4200,
+  "actual": 4200,
+  "remaining": 800,
+  "variance": 800,
+  "carryover": true,
+  "carryover_amount": 0,
+  "raw": {}
+}
+```
+
+### `transactions list --include-category-names` enrichment
+
+When `--include-category-names` is present, each row in `data.transactions[]` gains:
+
+- `category_name`
+- `category_group_name`
+
+Existing transaction fields are preserved unchanged.
 
 ### Read-only mode behavior
 
@@ -135,7 +184,7 @@ Canonical codes introduced in Phase 1:
   - Typical cause: server too slow or connectivity degradation.
 - `INVALID_INPUT`
   - Client-side validation errors.
-  - Typical cause: invalid flags, missing required values, bad date formats/ranges.
+  - Typical cause: invalid flags, missing required values, bad date/month formats (`YYYY-MM-DD`, `YYYY-MM`) or invalid ranges.
 - `INTERNAL_ERROR`
   - Unclassified/internal failures.
 

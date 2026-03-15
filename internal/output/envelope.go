@@ -75,7 +75,8 @@ func MapError(err error) EnvelopeError {
 		strings.Contains(lower, " is required"),
 		strings.Contains(lower, "invalid server url"),
 		strings.Contains(lower, "invalid date range"),
-		strings.Contains(lower, "expected yyyy-mm-dd"):
+		strings.Contains(lower, "expected yyyy-mm-dd"),
+		strings.Contains(lower, "expected yyyy-mm"):
 		return EnvelopeError{Code: "INVALID_INPUT", Message: msg, Retryable: false}
 	default:
 		return EnvelopeError{Code: "INTERNAL_ERROR", Message: msg, Retryable: false}

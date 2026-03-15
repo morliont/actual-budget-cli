@@ -22,6 +22,7 @@ func newTransactionsListCmd() *cobra.Command {
 	var accountID, from, to string
 	var limit int
 	var asJSON bool
+	var includeCategoryNames bool
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -29,6 +30,7 @@ func newTransactionsListCmd() *cobra.Command {
 		Long:  "List transactions from the configured Actual budget.",
 		Example: `  actual-cli transactions list
   actual-cli transactions list --account <ACCOUNT_ID> --from 2026-01-01 --to 2026-01-31 --limit 50
+  actual-cli transactions list --include-category-names
   actual-cli transactions list --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig()
@@ -54,7 +56,7 @@ func newTransactionsListCmd() *cobra.Command {
 				return err
 			}
 			var res bridge.TransactionsListResponse
-			if err := runBridge(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: bridge.TransactionsListArgs{AccountID: accountID, From: from, To: to, Limit: limit}}, &res); err != nil {
+			if err := runBridge(cmd.Context(), "transactions-list", bridge.Request{Config: cfg, Args: bridge.TransactionsListArgs{AccountID: accountID, From: from, To: to, Limit: limit, IncludeCategoryNames: includeCategoryNames}}, &res); err != nil {
 				return err
 			}
 			if useAgentJSON(cmd) {
@@ -69,9 +71,17 @@ func newTransactionsListCmd() *cobra.Command {
 				if err := json.Unmarshal(raw, &t); err != nil {
 					return fmt.Errorf("invalid transaction payload: %w", err)
 				}
-				rows = append(rows, []string{t.Date, t.Account, t.PayeeName, fmt.Sprint(t.Amount), t.Notes})
+				if includeCategoryNames {
+					rows = append(rows, []string{t.Date, t.Account, t.PayeeName, fmt.Sprint(t.Amount), t.CategoryName, t.CategoryGroupName, t.Notes})
+				} else {
+					rows = append(rows, []string{t.Date, t.Account, t.PayeeName, fmt.Sprint(t.Amount), t.Notes})
+				}
 			}
-			printTable([]string{"Date", "Account", "Payee", "Amount", "Notes"}, rows)
+			if includeCategoryNames {
+				printTable([]string{"Date", "Account", "Payee", "Amount", "Category", "Group", "Notes"}, rows)
+			} else {
+				printTable([]string{"Date", "Account", "Payee", "Amount", "Notes"}, rows)
+			}
 			return nil
 		},
 	}
@@ -80,6 +90,7 @@ func newTransactionsListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&from, "from", "", "Start date (YYYY-MM-DD)")
 	cmd.Flags().StringVar(&to, "to", "", "End date (YYYY-MM-DD)")
 	cmd.Flags().IntVar(&limit, "limit", 100, "Maximum number of rows (>0)")
+	cmd.Flags().BoolVar(&includeCategoryNames, "include-category-names", false, "Include category_name and category_group_name fields")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Output JSON")
 	return cmd
 }

@@ -16,7 +16,7 @@ func newBudgetsCmd() *cobra.Command {
 		Short: "Work with budget summaries",
 		Long:  "Inspect high-level budget information from the current month.",
 	}
-	cmd.AddCommand(newBudgetsSummaryCmd())
+	cmd.AddCommand(newBudgetsSummaryCmd(), newBudgetsCategoriesCmd())
 	return cmd
 }
 
@@ -123,6 +123,65 @@ func newBudgetsSummaryCmd() *cobra.Command {
 			return nil
 		},
 	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Output JSON")
+	return cmd
+}
+
+func newBudgetsCategoriesCmd() *cobra.Command {
+	var asJSON bool
+	var month string
+
+	cmd := &cobra.Command{
+		Use:   "categories",
+		Short: "Show per-category budget values for a month",
+		Long:  "Show budgeted, spent, remaining and carryover-aware values per category for a selected month.",
+		Example: `  actual-cli budgets categories --month 2026-03
+  actual-cli budgets categories --month 2026-03 --json
+  actual-cli budgets categories --month 2026-03 --agent-json`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validateMonth(month, "month"); err != nil {
+				return err
+			}
+
+			cfg, err := loadConfig()
+			if err != nil {
+				return err
+			}
+
+			var res bridge.BudgetCategoriesResponse
+			if err := runBridge(cmd.Context(), "budgets-categories", bridge.Request{Config: cfg, Args: bridge.BudgetCategoriesArgs{Month: month}}, &res); err != nil {
+				return err
+			}
+
+			if useAgentJSON(cmd) {
+				return printJSON(successEnvelope(cmd, map[string]any{"month": res.Month, "categories": res.Categories}))
+			}
+			if asJSON {
+				return printJSON(res)
+			}
+
+			rows := make([][]string, 0, len(res.Categories))
+			for _, raw := range res.Categories {
+				var c map[string]any
+				if err := json.Unmarshal(raw, &c); err != nil {
+					return fmt.Errorf("invalid budget category payload: %w", err)
+				}
+				rows = append(rows, []string{
+					fmt.Sprint(c["category_name"]),
+					fmt.Sprint(c["category_group_name"]),
+					formatCurrencyCentsBE(firstNumeric(c, "budgeted", "planned")),
+					formatCurrencyCentsBE(firstNumeric(c, "spent", "actual")),
+					formatCurrencyCentsBE(firstNumeric(c, "remaining", "variance")),
+					fmt.Sprint(c["carryover"]),
+				})
+			}
+
+			printTable([]string{"Category", "Group", "Budgeted", "Spent", "Remaining", "Carryover"}, rows)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&month, "month", "", "Budget month (YYYY-MM)")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Output JSON")
 	return cmd
 }
