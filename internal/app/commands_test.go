@@ -156,12 +156,41 @@ func TestAccountsList_TableDecodeFailure(t *testing.T) {
 	}
 }
 
+func TestAccountsList_TableIncludesBalanceCurrent(t *testing.T) {
+	withAppDeps(t)
+	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
+	runBridge = func(_ context.Context, _ string, _ bridge.Request, out any) error {
+		resp := out.(*bridge.AccountsListResponse)
+		resp.Accounts = []json.RawMessage{json.RawMessage(`{"id":"acc-1","name":"Checking","type":"bank","offbudget":false,"closed":false,"balance_current":12345}`)}
+		return nil
+	}
+
+	var headers []string
+	var rows [][]string
+	printTable = func(h []string, r [][]string) {
+		headers = h
+		rows = r
+	}
+
+	cmd := newAccountsListCmd()
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !reflect.DeepEqual(headers, []string{"ID", "Name", "Type", "Balance Current", "Off Budget", "Closed"}) {
+		t.Fatalf("unexpected headers: %#v", headers)
+	}
+	want := [][]string{{"acc-1", "Checking", "bank", "12345", "false", "false"}}
+	if !reflect.DeepEqual(rows, want) {
+		t.Fatalf("unexpected rows: %#v", rows)
+	}
+}
+
 func TestAccountsList_AgentJSONEnvelope(t *testing.T) {
 	withAppDeps(t)
 	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
 	runBridge = func(_ context.Context, _ string, _ bridge.Request, out any) error {
 		resp := out.(*bridge.AccountsListResponse)
-		resp.Accounts = []json.RawMessage{json.RawMessage(`{"id":"acc-1","name":"Checking","type":"bank","offbudget":false,"closed":false}`)}
+		resp.Accounts = []json.RawMessage{json.RawMessage(`{"id":"acc-1","name":"Checking","type":"bank","offbudget":false,"closed":false,"balance_current":12345}`)}
 		return nil
 	}
 

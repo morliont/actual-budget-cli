@@ -47,9 +47,13 @@ func newAccountsListCmd() *cobra.Command {
 				if err := json.Unmarshal(raw, &a); err != nil {
 					return fmt.Errorf("invalid account payload: %w", err)
 				}
-				rows = append(rows, []string{a.ID, a.Name, a.Type, fmt.Sprint(a.OffBudget), fmt.Sprint(a.Closed)})
+				balance := ""
+				if a.BalanceCurrent != nil {
+					balance = fmt.Sprint(*a.BalanceCurrent)
+				}
+				rows = append(rows, []string{a.ID, a.Name, a.Type, balance, fmt.Sprint(a.OffBudget), fmt.Sprint(a.Closed)})
 			}
-			printTable([]string{"ID", "Name", "Type", "Off Budget", "Closed"}, rows)
+			printTable([]string{"ID", "Name", "Type", "Balance Current", "Off Budget", "Closed"}, rows)
 			return nil
 		},
 	}

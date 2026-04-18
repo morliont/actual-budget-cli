@@ -27,11 +27,12 @@ type AccountsListResponse struct {
 }
 
 type AccountRow struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	OffBudget bool   `json:"offbudget"`
-	Closed    bool   `json:"closed"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	OffBudget      bool   `json:"offbudget"`
+	Closed         bool   `json:"closed"`
+	BalanceCurrent *int64 `json:"balance_current,omitempty"`
 }
 
 type CategoriesListResponse struct {

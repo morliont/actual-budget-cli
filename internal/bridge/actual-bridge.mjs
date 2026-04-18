@@ -68,6 +68,15 @@ async function withSession(cfg, fn) {
   }
 }
 
+async function accountsWithBalances() {
+  const accounts = await api.getAccounts();
+
+  return Promise.all(accounts.map(async (account) => ({
+    ...account,
+    balance_current: await api.getAccountBalance(account.id),
+  })));
+}
+
 async function categoriesWithGroups() {
   const groups = await api.getCategoryGroups();
   const categories = await api.getCategories();
@@ -116,7 +125,7 @@ async function run() {
 
   const result = await withSession(cfg, async () => {
     if (op === 'accounts-list') {
-      return { accounts: await api.getAccounts() };
+      return { accounts: await accountsWithBalances() };
     }
 
     if (op === 'categories-list') {
