@@ -92,6 +92,9 @@ type budgetCategoryRow struct {
 	Actual       any    `json:"actual"`
 	Remaining    any    `json:"remaining"`
 	Variance     any    `json:"variance"`
+	Received     any    `json:"received"`
+	IsIncome     *bool  `json:"is_income,omitempty"`
+	GroupIncome  *bool  `json:"group_is_income,omitempty"`
 }
 
 const varianceEpsilon = 0.0001
@@ -215,6 +218,16 @@ func loadMonthVariance(cmd *cobra.Command, cfg any, month string) (monthVariance
 		categoryCount++
 		budgeted := valueOrFallback(row.Budgeted, row.Planned)
 		netSpent := valueOrFallback(row.Spent, row.Actual)
+		isIncome := false
+		if row.IsIncome != nil {
+			isIncome = *row.IsIncome
+		}
+		if row.GroupIncome != nil {
+			isIncome = isIncome || *row.GroupIncome
+		}
+		if isIncome {
+			netSpent = valueOrFallback(row.Received, netSpent)
+		}
 		outflowSpent := 0.0
 		inflowOffsets := 0.0
 		if netSpent < 0 {

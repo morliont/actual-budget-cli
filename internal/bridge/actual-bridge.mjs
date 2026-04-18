@@ -174,10 +174,13 @@ async function run() {
       for (const group of groups) {
         const categoryRows = Array.isArray(group?.categories) ? group.categories : [];
         for (const category of categoryRows) {
+          const isIncome = Boolean(category?.is_income || group?.is_income);
           const budgeted = pickNumber(category, ['budgeted', 'budget', 'budgetedAmount']) ?? 0;
           const spent = pickNumber(category, ['spent', 'activity', 'spentAmount']) ?? 0;
-          const remaining = pickNumber(category, ['remaining', 'balance', 'available']) ?? (budgeted - spent);
-          const variance = pickNumber(category, ['variance']) ?? (budgeted - spent);
+          const received = pickNumber(category, ['received']);
+          const effectiveActivity = isIncome ? (received ?? spent) : spent;
+          const remaining = pickNumber(category, ['remaining', 'balance', 'available']) ?? (budgeted - effectiveActivity);
+          const variance = pickNumber(category, ['variance']) ?? (budgeted - effectiveActivity);
           const carryover = category?.carryover ?? category?.is_carryover ?? category?.rollover ?? null;
 
           categories.push({
@@ -190,6 +193,9 @@ async function run() {
             planned: budgeted,
             spent,
             actual: spent,
+            received,
+            is_income: category?.is_income ?? null,
+            group_is_income: group?.is_income ?? null,
             remaining,
             variance,
             carryover,

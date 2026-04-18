@@ -100,6 +100,36 @@ func TestReportsMonthlyVariance_PositiveOffsetMonth(t *testing.T) {
 	}
 }
 
+func TestReportsMonthlyVariance_UsesReceivedForIncomeGroups(t *testing.T) {
+	withAppDeps(t)
+	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
+
+	runBridge = func(_ context.Context, _ string, req bridge.Request, out any) error {
+		args := req.Args.(bridge.BudgetCategoriesArgs)
+		resp := out.(*bridge.BudgetCategoriesResponse)
+		resp.Month = args.Month
+		resp.Categories = []json.RawMessage{
+			json.RawMessage(`{"category_id":"i1","category_name":"Salary","category_group_id":"g-inc","category_group_name":"Income","spent":0,"actual":0,"received":41111,"is_income":true,"group_is_income":true,"remaining":-41111,"variance":-41111}`),
+			json.RawMessage(`{"category_id":"c1","category_name":"Groceries","category_group_id":"g1","category_group_name":"Living","budgeted":5000,"spent":-4000,"remaining":9000,"variance":9000}`),
+		}
+		return nil
+	}
+
+	month, err := loadMonthVariance(newReportsMonthlyVarianceCmd(), &config.Config{}, "2026-04")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if month.Raw.NetSpent != 37111 || month.Raw.InflowOffsets != 41111 || month.Raw.OutflowSpent != 4000 {
+		t.Fatalf("unexpected spend decomposition with income received: %+v", month.Raw)
+	}
+	if month.Groups[0].GroupName != "Income" || month.Groups[0].Raw.NetSpent != 41111 {
+		t.Fatalf("expected income group to reflect received amount, got %+v", month.Groups)
+	}
+	if month.Quality.FailedCheckCount != 0 {
+		t.Fatalf("expected no reconciliation failures, got %+v", month.Quality)
+	}
+}
+
 func TestReportsMonthlyVariance_StrictFailsOnMismatch(t *testing.T) {
 	withAppDeps(t)
 	loadConfig = func() (*config.Config, error) { return &config.Config{}, nil }
