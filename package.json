@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@actual-app/api": "^26.5.2"
+    "@actual-app/api": "^26.6.0-nightly.20260521"
   }
 }

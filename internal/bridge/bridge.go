@@ -150,19 +150,34 @@ func materializeBridgeScript() (string, func(), error) {
 }
 
 func chooseBridgeScriptDir() string {
-	// Prefer current working directory when it looks like repo/dev runtime
-	// so Node ESM package resolution can find local node_modules.
-	wd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	if wd == "" {
-		return ""
-	}
-	if fileExists(filepath.Join(wd, "package.json")) && fileExists(filepath.Join(wd, "node_modules", "@actual-app", "api", "package.json")) {
-		return wd
+	// Use a directory with package.json + node_modules so Node ESM package
+	// resolution can find @actual-app/api and better-sqlite3 even when the
+	// binary is launched from an agent workspace instead of the repo root.
+	for _, dir := range bridgeScriptDirCandidates() {
+		if dir == "" {
+			continue
+		}
+		if fileExists(filepath.Join(dir, "package.json")) && fileExists(filepath.Join(dir, "node_modules", "@actual-app", "api", "package.json")) {
+			return dir
+		}
 	}
 	return ""
+}
+
+func bridgeScriptDirCandidates() []string {
+	var dirs []string
+	if wd, err := os.Getwd(); err == nil {
+		dirs = append(dirs, wd)
+	}
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
+		dirs = append(dirs, exeDir, filepath.Dir(exeDir))
+	}
+	dirs = append(dirs,
+		os.Getenv("ACTUAL_CLI_BRIDGE_DIR"),
+		filepath.Join(os.Getenv("HOME"), ".openclaw", "workspace", "projects", "actual-budget-cli"),
+	)
+	return dirs
 }
 
 func fileExists(p string) bool {
