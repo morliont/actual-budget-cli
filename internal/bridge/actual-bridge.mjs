@@ -80,6 +80,13 @@ function isMigrationMismatch(err) {
     String(err?.message || err).includes('Database is out of sync with migrations');
 }
 
+function isDownloadBudgetSyncMismatch(err) {
+  const message = String(err?.message || err);
+  return isMigrationMismatch(err) ||
+    message.includes('PostError: invalid fileId') ||
+    message.includes('invalid fileId');
+}
+
 function isSqliteFallbackOp(op) {
   return ['accounts-list', 'categories-list', 'transactions-list', 'budgets-categories', 'budgets-summary'].includes(op);
 }
@@ -525,7 +532,7 @@ async function run() {
       fail(`unknown operation: ${op}`);
     });
   } catch (e) {
-    if (!isMigrationMismatch(e) || !isSqliteFallbackOp(op)) {
+    if (!isDownloadBudgetSyncMismatch(e) || !isSqliteFallbackOp(op)) {
       throw e;
     }
     result = sqliteFallback(cfg, op, args);
